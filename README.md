@@ -1,5 +1,5 @@
 
-This Hugo Theme is a fork of the [Themefisher Academia theme](https://github.com/themefisher/Academia-hugo), which is a fork of the original [Hugo Academic theme](https://github.com/gcushen/hugo-academic}
+This Hugo Theme is a fork of the [Themefisher Academia theme](https://github.com/themefisher/Academia-hugo), which is a fork of the original [Hugo Academic theme](https://github.com/gcushen/hugo-academic).
 
 ### Changes
 
