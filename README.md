@@ -8,3 +8,4 @@ This Hugo Theme is a fork of the [Themefisher Academia theme](https://github.com
 - Increased width of the homescreen and homescreen widgets to 1500px
 - Show both a title and webpage logo on the navbar
 - Reduced spacing between portfolio cards and text.
+- fixed project external link opening in new tab even when disabled.
