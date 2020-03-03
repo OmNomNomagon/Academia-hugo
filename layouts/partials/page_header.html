@@ -19,15 +19,15 @@
 
 {{/* Featured image */}}
 {{ if and $featured (not .Params.image.preview_only) }}
-{{ $image := $featured.Fill (printf "680x500 q90 %s" $anchor) }}
+{{ $image := $featured.Fill (printf "1500x1000 q90 %s" $anchor) }}
 <div class="container split-header">
   <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-lg-12">
         <img class="img-fluid w-100" src="{{ $image.RelPermalink }}" itemprop="image" alt="">
         {{ with $.Params.image.caption }}<span
           class="article-header-caption">{{ . | markdownify | emojify }}</span>{{ end }}
     </div>
-    <div class="col-lg-8">
+    <div class="col-lg-12">
       <h1 itemprop="name">{{ $title }}</h1>
 
       {{ with $page.Params.subtitle }}

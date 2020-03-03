@@ -10,8 +10,8 @@
 <div class="project-card project-item isotope-item {{ $js_tag_classes | safeHTMLAttr }}">
   <div class="card rounded-0 shadow-sm">
     {{ with $resource }}
-    {{ $image := .Resize (printf "550x q90 %s") }}
-    <a href="{{ $link }}" {{ $target | safeHTMLAttr }} class="card-image">
+    {{ $image := .Resize (printf "600x q90 %s") }}
+    <a href="{{ $link }}" class="card-image">
       <img src="{{ $image.RelPermalink }}" alt="" class="img-responsive">
     </a>
     {{ end }}
