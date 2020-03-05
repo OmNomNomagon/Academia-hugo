@@ -96,6 +96,21 @@ footer p {
     color: #fc6f5c;
 }
 
+
+.article.article-project.py-6{
+	padding-top: 30px;
+    padding-bottom: 0px ;
+}
+
+.article-style{
+	padding-bottom: 100px;
+}
+
+.post-nav {
+	margin-bottom: 50px;
+
+}
+
 @media screen and (min-width: 1200px){
 	.isotope.projects-container.js-layout-masonry {
 		padding-left: 1.5%;
