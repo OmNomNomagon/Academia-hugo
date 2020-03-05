@@ -64,6 +64,11 @@
 	padding-bottom: 5px;
 }
 
+.dsq-brlink {
+	display: none;
+}
+
+
 
 @media screen and (max-width: 580px){
 	.navbar-brand {
@@ -98,6 +103,11 @@ footer p {
 
 .list-inline-item {
     color: #fc6f5c;
+}
+
+
+.article.article-project.py-6 {
+	padding-top: 30px
 }
 
 @media screen and (min-width: 1200px){
