@@ -13,7 +13,7 @@
     {{ partial "tags.html" . }}
     {{ partial "page_author.html" . }}
 
-	<div id="replybox"></div>
+
     {{ $page := . }}
     {{ $project := .File.ContentBaseName }}
 
@@ -72,6 +72,7 @@
 {{ if site.Params.section_pager }}
 <div class="article-container article-widget">
   {{ partial "section_pager.html" . }}
+  <div id="replybox"></div>
 </div>
 {{ end }}
 
