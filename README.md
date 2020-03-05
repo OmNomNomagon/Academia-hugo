@@ -8,4 +8,3 @@ This Hugo Theme is a fork of the [Themefisher Academia theme](https://github.com
 - Show both a title and webpage logo on the navbar
 - Reduced spacing between portfolio cards and text.
 - fixed project external link opening in new tab even when disabled.
-- new Project view type which allows for a Silder or images instead of a single image

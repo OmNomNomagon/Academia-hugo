@@ -1,6 +1,7 @@
 {{- define "main" -}}
 {{ partial "widget_page.html" . }}
-<article class="article article-project py-6" itemscope itemtype="http://schema.org/Article">
+
+<article class="article article-project py-5" itemscope itemtype="http://schema.org/Article">
   {{ partial "page_header.html" . }}
 
   <div class="article-container">
@@ -11,7 +12,8 @@
 
     {{ partial "tags.html" . }}
     {{ partial "page_author.html" . }}
-	{{ template "_internal/disqus.html" . }}
+
+	<div id="replybox"></div>
     {{ $page := . }}
     {{ $project := .File.ContentBaseName }}
 
@@ -67,7 +69,6 @@
     </div>
   </div>
 </article>
-
 {{ if site.Params.section_pager }}
 <div class="article-container article-widget">
   {{ partial "section_pager.html" . }}
