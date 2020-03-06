@@ -1,4 +1,6 @@
 {{ $current_page := . }}
+{{ template "_internal/google_analytics.html" . }}
+
 <nav class="navbar navbar-light fixed-top navbar-expand-lg py-0" id="navbar-main">
   <div class="container">
 
@@ -129,4 +131,5 @@
 
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container -->
+  <script async src="//www.google-analytics.com/analytics.js"></script>
 </nav>
