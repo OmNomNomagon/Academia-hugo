@@ -20,11 +20,13 @@
   {{ end }}
 
   {{ partial "citation.html" . }}
+  {{if $.Site.Params.replybox }}
 	<script>
 		window.replybox = {
-			site: 'NPOBOrWnVa', 
+			site: {{ $.Site.Params.replybox }}, 
 		};
 	</script>
 	<script src="https://cdn.getreplybox.com/js/embed.js"></script>
+   {{end}}
 </body>
 </html>

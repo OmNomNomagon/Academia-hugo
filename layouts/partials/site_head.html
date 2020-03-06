@@ -23,12 +23,16 @@
 
   {{/* Generate page description. */}}
   {{ $desc := "" }}
-  {{ if .Params.summary }}
+  {{ if .Params.description }}
+    {{ $desc = .Params.description }}
+  {{ else if .Params.summary }}
     {{ $desc = .Params.summary }}
   {{ else if .Params.abstract }}
     {{ $desc = .Params.abstract }}
   {{ else if .IsPage }}
     {{ $desc = .Summary }}
+  {{ else if site.Params.sitedescription }}
+    {{ $desc = site.Params.sitedescription }}
   {{ else if site.Params.description }}
     {{ $desc = site.Params.description }}
   {{ else }}
