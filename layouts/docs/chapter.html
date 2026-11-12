@@ -1,0 +1,7 @@
+{{/* A docs chapter: the landing page of a documentation set (e.g. /docs/mk3x/).
+     Renders with the full docs layout - sidebar nav + on-this-page TOC.
+     Selected via `layout: chapter` in the chapter's _index.md front matter.
+     Distinct from docs/docs.html, which is the index that lists the chapters. */}}
+{{- define "main" -}}
+{{ partial "docs_layout.html" . }}
+{{- end -}}
