@@ -22,6 +22,10 @@
 <!-- Slides. Images only: the caption and button are static, rendered once below. -->
 <div class="carousel-inner">
   {{ range $index, $item := $items }}
+  {{/* Alt text: a slide can set `alt`; otherwise project-page galleries get
+       "<page title> – photo N" so image search knows what they show. The
+       homepage hero sets an alt per slide in content/home/slider.md. */}}
+  {{ $alt := $item.alt | default (cond $.IsHome "" (printf "%s – photo %d" $.Title (add $index 1))) }}
   <div class="wg-hero dark carousel-item{{ if eq $index 0 }} active{{ end }}"
        style="{{ with $page.Params.height }}{{ printf "height: %s;" . | safeCSS }}{{ end }}{{ with $item.overlay_color }}background-color: {{ . }};{{ end }}">
 
@@ -64,7 +68,7 @@
                srcset="{{ delimit $jpeg ", " }}"
                sizes="100vw"
                width="{{ $master.Width }}" height="{{ $master.Height }}"
-               alt=""
+               alt="{{ $alt }}"
                loading="{{ $loading }}"
                fetchpriority="{{ $priority }}"
                decoding="{{ $decoding }}">
@@ -77,7 +81,7 @@
         {{ warnf "slider: %q is not in assets/, serving it unprocessed from static/" . }}
         <picture class="hero-bg">
           <img src="{{ printf "img/%s" . | absURL }}"
-               alt=""
+               alt="{{ $alt }}"
                loading="{{ $loading }}"
                fetchpriority="{{ $priority }}"
                decoding="{{ $decoding }}">

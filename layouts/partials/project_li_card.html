@@ -42,7 +42,7 @@
         <source type="image/webp" srcset="{{ delimit $webp ", " }}" sizes="{{ $sizes }}">
         <img src="{{ $fallback.RelPermalink }}" srcset="{{ delimit $jpeg ", " }}" sizes="{{ $sizes }}"
              width="{{ $fallback.Width }}" height="{{ $fallback.Height }}"
-             alt="" class="img-responsive" loading="lazy" decoding="async">
+             alt="{{ $item.Title }}" class="img-responsive" loading="lazy" decoding="async">
       </picture>
     </a>
     {{ end }}

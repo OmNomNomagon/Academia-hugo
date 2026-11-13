@@ -1,0 +1,12 @@
+{{- /* Every Markdown image ( ![alt](src) ) in the site's pages renders through
+     this hook. Most write-up photos were written with no alt text, or with the
+     placeholder "table", so image search had nothing to go on. Those now get
+     "<page title> – build photo N"; any real alt text is kept as written, so
+     describing a photo properly in the Markdown always wins.
+     Photos in write-ups sit below the page's slider, so they load lazily. */ -}}
+{{- $alt := .PlainText -}}
+{{- if or (not $alt) (eq (lower (trim $alt " ")) "table") -}}
+  {{- $alt = printf "%s – build photo %d" .Page.Title (add .Ordinal 1) -}}
+{{- end -}}
+<img src="{{ .Destination | safeURL }}" alt="{{ $alt }}"{{ with .Title }} title="{{ . }}"{{ end }} loading="lazy" decoding="async">
+{{- /**/ -}}
