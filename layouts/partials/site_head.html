@@ -60,9 +60,22 @@
     <link rel="stylesheet" href="{{ printf "/css/vendor/%s" ($scr.Get "vendor_css_filename") | relURL }}">
   {{ else }}
     {{ $scr.Set "use_cdn" 1 }}
-    {{ printf "<link rel=\"stylesheet\" href=\"%s\" integrity=\"%s\" crossorigin=\"anonymous\">" (printf $css.academicons.url $css.academicons.version) $css.academicons.sri | safeHTML }}
-    {{ printf "<link rel=\"stylesheet\" href=\"%s\" integrity=\"%s\" crossorigin=\"anonymous\">" (printf $css.fontAwesome.url $css.fontAwesome.version) $css.fontAwesome.sri | safeHTML }}
+    {{/* Render-blocking audit, 14 Nov 2026 (PageSpeed: 7 blocking stylesheets,
+         ~1.2 s of LCP render delay):
+         - academicons: removed. No `ai` icons are used anywhere on the site.
+         - Font Awesome: loaded without blocking first paint (media="print" swaps to
+           "all" once loaded). Icons arrive a beat after the text; nothing reflows,
+           since every icon sits in a fixed-size box.
+         - fancybox: only on pages that use the figure/gallery shortcodes, the
+           only things that open its lightbox. site_js.html applies the same test. */}}
+    {{ $fa := printf $css.fontAwesome.url $css.fontAwesome.version }}
+    <link rel="preconnect" href="https://use.fontawesome.com" crossorigin>
+    {{ printf "<link rel=\"stylesheet\" href=\"%s\" integrity=\"%s\" crossorigin=\"anonymous\" media=\"print\" onload=\"this.media='all'\">" $fa $css.fontAwesome.sri | safeHTML }}
+    <noscript>{{ printf "<link rel=\"stylesheet\" href=\"%s\" integrity=\"%s\" crossorigin=\"anonymous\">" $fa $css.fontAwesome.sri | safeHTML }}</noscript>
+    {{ $scr.Set "fancybox_enabled" (or (.HasShortcode "figure") (.HasShortcode "gallery")) }}
+    {{ if $scr.Get "fancybox_enabled" }}
     {{ printf "<link rel=\"stylesheet\" href=\"%s\" integrity=\"%s\" crossorigin=\"anonymous\">" (printf $css.fancybox.url $css.fancybox.version) $css.fancybox.sri | safeHTML }}
+    {{ end }}
 
     {{/* Default to enabling highlighting, but allow the user to override it in .Params or site.Params.
          Use $scr to store "highlight_enabled", so that we can read it again in footer.html. */}}
@@ -100,26 +113,29 @@
   {{ end }}
 
   {{/* We cannot use SRI with Google Fonts because the CSS is dynamically generated according to the user agent. */}}
+  {{/* Fonts load without blocking first paint: display=swap already shows text
+       in a fallback font until the web font arrives, so there is no reason to
+       hold the whole page for the stylesheet that declares them. */}}
   {{ with ($scr.Get "google_fonts") }}
-  <link rel="stylesheet" {{ printf "href=\"https://fonts.googleapis.com/css?family=%s&display=swap\"" . | safeHTMLAttr }}>
+  {{ $gf := printf "https://fonts.googleapis.com/css?family=%s&display=swap" . }}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="{{ $gf }}" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="{{ $gf }}"></noscript>
   {{ end }}
 
+  {{/* Theme CSS (compiled Sass) and the site's own plugins_css (custom.css) in
+       ONE file, so first paint waits on a single request instead of two. Order
+       is preserved: theme first, custom.css after, so overrides still win. */}}
   {{ $css_options := (dict "targetPath" "css/academia.css" "outputStyle" "compressed") }}
   {{ $sass_template := resources.Get "sass/main.scss" }}
-  {{ $style := $sass_template | resources.ExecuteAsTemplate "main_parsed.scss" . | toCSS $css_options | minify | fingerprint "md5" }}
-  <link rel="stylesheet" href="{{ $style.RelPermalink }}">
-
-  {{ if site.Params.plugins_css }}
-    {{ $css_comment := printf "/* Source Themes academia v%s | https://sourcethemes.com/academic/ */\n" site.Data.academia.version }}
-    {{ $css_bundle_head := $css_comment | resources.FromString "css/bundle-head.css" }}
-    {{ $css_bundle := slice }}
-    {{ range site.Params.plugins_css }}
-      {{ $css_bundle = $css_bundle | append (resources.Get (printf "css/%s.css" .)) }}
-    {{ end }}
-    {{ $css_bundle := $css_bundle | resources.Concat "css/academia-bundle-pre.css" | minify }}
-    {{ $css_bundle := slice $css_bundle_head $css_bundle | resources.Concat "css/academia.css" | fingerprint "md5" }}
-    <link rel="stylesheet" href="{{ $css_bundle.RelPermalink }}">
+  {{ $style := $sass_template | resources.ExecuteAsTemplate "main_parsed.scss" . | toCSS $css_options }}
+  {{ $parts := slice $style }}
+  {{ range site.Params.plugins_css }}
+    {{ $parts = $parts | append (resources.Get (printf "css/%s.css" .)) }}
   {{ end }}
+  {{ $site_css := $parts | resources.Concat "css/site.css" | minify | fingerprint "md5" }}
+  <link rel="stylesheet" href="{{ $site_css.RelPermalink }}">
 
   {{ if not hugo.IsServer }}
   {{ if site.Config.Services.GoogleAnalytics.ID }}

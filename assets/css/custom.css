@@ -659,6 +659,18 @@ pre, code {
     padding-top: 0.6rem;
 }
 
+/* --- Project card thumbnails ---------------------------------------------- */
+/* The <img> carries width/height so the browser reserves the right space before
+   it loads; height:auto lets it scale with the card instead of keeping those
+   pixel values. <picture> is inline by default, so make it a block to avoid a
+   gap under the image. */
+.project-card .card-image picture { display: block; }
+.project-card .card-image img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
 /* --- Comments (giscus) ---------------------------------------------------- */
 /* Author icons to the pager was 71px (icons 20 + container padding 20 + pager
    margin 20 + item padding 11). Now 20 + 12 + 0 + 11 = 43px, matching the gap

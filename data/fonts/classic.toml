@@ -2,7 +2,7 @@
 name = "Classic"
 
 # Optional Google font URL
-google_fonts = "Lato:400,700|Open+Sans|Roboto+Mono"
+google_fonts = "Lato:400,700|Open+Sans"  # Roboto Mono dropped: only used for code, and the site has none
 
 # Font families
 heading_font = "Lato"

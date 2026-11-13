@@ -16,9 +16,31 @@
      data-type="{{ with $item.Params.tags }}{{ index . 0 }}{{ end }}">
   <div class="card rounded-0 shadow-sm">
     {{ with $resource }}
-    {{ $image := .Resize (printf "600x q90 %s") }}
+    {{/* AVIF -> WebP -> JPEG at three widths, the same treatment as the hero.
+         Cards are 100% wide on phones, half below 1200px and a third above,
+         topping out near 500px, so 480/720/1000 covers 1x and 2x screens.
+         width/height reserve the space before the image loads (no layout shift),
+         and every card is lazy: the hero fills the first screen on the homepage,
+         so none of them is the LCP image. */}}
+    {{ $widths := slice }}
+    {{ range slice 480 720 1000 }}{{ if le . $resource.Width }}{{ $widths = $widths | append . }}{{ end }}{{ end }}
+    {{ if not $widths }}{{ $widths = slice $resource.Width }}{{ end }}
+    {{ $avif := slice }}{{ $webp := slice }}{{ $jpeg := slice }}
+    {{ range $w := $widths }}
+      {{ $avif = $avif | append (printf "%s %dw" ($resource.Resize (printf "%dx avif q55" $w)).RelPermalink $w) }}
+      {{ $webp = $webp | append (printf "%s %dw" ($resource.Resize (printf "%dx webp q72" $w)).RelPermalink $w) }}
+      {{ $jpeg = $jpeg | append (printf "%s %dw" ($resource.Resize (printf "%dx jpg q78" $w)).RelPermalink $w) }}
+    {{ end }}
+    {{ $fallback := $resource.Resize (printf "%dx jpg q78" (index $widths 0)) }}
+    {{ $sizes := "(max-width: 768px) 100vw, (max-width: 1199px) 50vw, 520px" }}
     <a href="{{ $link }}" class="card-image">
-      <img src="{{ $image.RelPermalink }}" alt="" class="img-responsive">
+      <picture>
+        <source type="image/avif" srcset="{{ delimit $avif ", " }}" sizes="{{ $sizes }}">
+        <source type="image/webp" srcset="{{ delimit $webp ", " }}" sizes="{{ $sizes }}">
+        <img src="{{ $fallback.RelPermalink }}" srcset="{{ delimit $jpeg ", " }}" sizes="{{ $sizes }}"
+             width="{{ $fallback.Width }}" height="{{ $fallback.Height }}"
+             alt="" class="img-responsive" loading="lazy" decoding="async">
+      </picture>
     </a>
     {{ end }}
     <div class="card-body">
