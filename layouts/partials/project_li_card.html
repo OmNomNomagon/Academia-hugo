@@ -33,7 +33,10 @@
     {{ end }}
     {{ $fallback := $resource.Resize (printf "%dx jpg q78" (index $widths 0)) }}
     {{ $sizes := "(max-width: 768px) 100vw, (max-width: 1199px) 50vw, 520px" }}
-    <a href="{{ $link }}" class="card-image">
+    {{/* The photo repeats the title link below it. Hidden from screen readers and
+         skipped by Tab, so each card is one named link rather than an unnamed
+         image link plus the title; mouse and touch can still click the photo. */}}
+    <a href="{{ $link }}" class="card-image" aria-hidden="true" tabindex="-1">
       <picture>
         <source type="image/avif" srcset="{{ delimit $avif ", " }}" sizes="{{ $sizes }}">
         <source type="image/webp" srcset="{{ delimit $webp ", " }}" sizes="{{ $sizes }}">
@@ -44,7 +47,9 @@
     </a>
     {{ end }}
     <div class="card-body">
-      <h4><a href="{{ $link }}" {{ $target | safeHTMLAttr }}>{{ $item.Title | markdownify | emojify }}</a></h4>
+      {{/* h3: section headings are h2, so card titles come next in the outline.
+           (Were h4, which skipped a level.) Styled identically via .card h3. */}}
+      <h3><a href="{{ $link }}" {{ $target | safeHTMLAttr }}>{{ $item.Title | markdownify | emojify }}</a></h3>
       <div class="card-desription">
         {{ with $item.Params.summary }}<p>{{ . | markdownify | emojify }}</p>{{ end }}
       </div>

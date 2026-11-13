@@ -151,8 +151,12 @@ svg.chev polyline {
 	top: 1px;
 }
 
+/* h3 since the SEO pass (was h4). Global h3 has a 1.5rem top margin vs h4's
+   1rem, so pin it, or every card title would sit lower than before. */
+.card h3,
 .card h4 {
     font-size: .75rem;
+    margin-top: 1rem;
     font-weight: 550;
     line-height: 1.5;
 	letter-spacing: 1.3px;
@@ -721,6 +725,7 @@ pre, code {
 .dark .title-chev svg.chev polyline + polyline {
     stroke: #1065B8;
 }
+.dark .project-card h3 a,
 .dark .project-card h4 a {
     color: #f1f3f5;
 }

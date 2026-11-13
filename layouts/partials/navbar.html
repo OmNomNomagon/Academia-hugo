@@ -1,12 +1,36 @@
 {{ $current_page := . }}
-{{ template "_internal/google_analytics.html" . }}
+{{/* Google Analytics removed 14 Nov 2026: visits are counted by Cloudflare Web
+     Analytics, which Cloudflare injects at its edge, so nothing loads from here. */}}
 
 <nav class="navbar navbar-light fixed-top navbar-expand-lg py-0" id="navbar-main">
   <div class="container">
 
     <!-- Brand and toggle get grouped for better mobile display -->
       <a class="navbar-img" href="{{ "/" | relLangURL }}">
-        <img src="{{ printf "/img/%s" site.Params.logo | relURL }}">
+        {{/* The alt text is the link's only name (the image is all it contains),
+             so it says where the link goes, not what the picture shows. */}}
+        {{/* The logo shows at 60x60 (.navbar-img caps it), but the master is 800x800.
+             Serve 60/120/180px for 1x/2x/3x screens, AVIF/WebP with a PNG fallback,
+             and state the size so nothing shifts while it loads. Falls back to the
+             static file if the master isn't under assets/. */}}
+        {{- $logo := resources.Get (printf "img/%s" site.Params.logo) }}
+        {{- with $logo }}
+          {{- $set := slice }}{{ $webp := slice }}{{ $avif := slice }}
+          {{- range $x := slice 1 2 3 }}
+            {{- $px := mul 60 $x }}
+            {{- $avif = $avif | append (printf "%s %dx" ($logo.Resize (printf "%dx avif q70" $px)).RelPermalink $x) }}
+            {{- $webp = $webp | append (printf "%s %dx" ($logo.Resize (printf "%dx webp q80" $px)).RelPermalink $x) }}
+            {{- $set = $set | append (printf "%s %dx" ($logo.Resize (printf "%dx png" $px)).RelPermalink $x) }}
+          {{- end }}
+        <picture>
+          <source type="image/avif" srcset="{{ delimit $avif ", " }}">
+          <source type="image/webp" srcset="{{ delimit $webp ", " }}">
+          <img src="{{ (.Resize "60x png").RelPermalink }}" srcset="{{ delimit $set ", " }}"
+               width="60" height="60" alt="Mark Riganti, home">
+        </picture>
+        {{- else }}
+        <img src="{{ printf "/img/%s" site.Params.logo | relURL }}" width="60" height="60" alt="Mark Riganti, home">
+        {{- end }}
 		  <a class="navbar-brand" href="{{ "/" | relLangURL }}">
 			{{- if $.Site.Params.maintitle -}}
 				{{/* Wrap each colon so it can be coloured independently of the words.
@@ -189,5 +213,4 @@
 
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container -->
-  <script async src="//www.google-analytics.com/analytics.js"></script>
 </nav>
