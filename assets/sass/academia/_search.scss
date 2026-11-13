@@ -62,9 +62,11 @@
   background-color: rgb(40, 42, 54);
 }
 
-.search-header h1 {
+.search-header h2 {
   margin: 0;
   line-height: 1;
+  /* Was an h1 (one h1 per page is for the page title); keep its old size. */
+  font-size: 2.25rem;
 }
 
 .col-search-close {

@@ -31,6 +31,10 @@
     {{ $desc = .Params.abstract }}
   {{ else if .IsPage }}
     {{ $desc = .Summary }}
+  {{ else if eq .Kind "term" }}
+    {{/* Tag pages fell back to the sitewide description, so every one was a
+         duplicate. Give each its own. */}}
+    {{ $desc = printf "%s projects by Mark Riganti: builds, write-ups and photos." .Title }}
   {{ else if site.Params.sitedescription }}
     {{ $desc = site.Params.sitedescription }}
   {{ else if site.Params.description }}
@@ -166,10 +170,24 @@
   <link rel="canonical" href="{{ .Permalink }}">
 
   {{ $featured_image := (.Resources.ByType "image").GetMatch "*featured*" }}
+  {{/* Project write-ups (/build/..., the MK3x docs) have no featured image of
+       their own: their photo is on the homepage-grid card that links to them
+       (content/project/<name>/featured.jpg). Find that card by its
+       external_link; docs pages without their own card use their section's.
+       Without this every project shared with the sitewide image. */}}
+  {{ if not $featured_image }}
+    {{ $cards := where site.RegularPages "Type" "project" }}
+    {{ $card := index (where $cards "Params.external_link" .RelPermalink) 0 }}
+    {{ if and (not $card) .CurrentSection }}
+      {{ $card = index (where $cards "Params.external_link" .CurrentSection.RelPermalink) 0 }}
+    {{ end }}
+    {{ with $card }}{{ $featured_image = (.Resources.ByType "image").GetMatch "*featured*" }}{{ end }}
+  {{ end }}
   {{ $og_image := "" }}
   {{ $twitter_card := "summary_large_image" }}
   {{ if $featured_image }}
-    {{ $og_image = $featured_image.Permalink }}
+    {{/* 1200x630 is the size share cards (Facebook, LinkedIn, X) are drawn at. */}}
+    {{ $og_image = ($featured_image.Fill "1200x630 Center jpg q80").Permalink }}
   {{ else if .Params.header.image }}
     {{ $og_image = printf "img/%s" .Params.header.image | absURL }}
   {{ else if site.Params.sharing_image }}
@@ -186,9 +204,16 @@
   <meta property="twitter:site" content="@{{ . }}">
   <meta property="twitter:creator" content="@{{ . }}">
   {{ end }}
+  {{/* Page titles: "<page> | Mark Riganti" rather than "<page> | Mark Riganti's
+       Projects", which doubled up on pages like "Projects | Mark Riganti's
+       Projects" and pushed the useful words further from the start. */}}
+  {{ $title := site.Title }}
+  {{ if not .IsHome }}{{ $title = printf "%s | %s" .Title (site.Params.title_suffix | default "Mark Riganti") }}{{ end }}
+  {{ .Scratch.Set "page_title" $title }}
+  <meta property="og:type" content="{{ if .IsPage }}article{{ else }}website{{ end }}">
   <meta property="og:site_name" content="{{ site.Title }}">
   <meta property="og:url" content="{{ .Permalink }}">
-  <meta property="og:title" content="{{ if not .IsHome }}{{ .Title }} | {{ end }}{{ site.Title }}">
+  <meta property="og:title" content="{{ $title }}">
   <meta property="og:description" content="{{ $desc }}">
   {{- with $og_image -}}
   <meta property="og:image" content="{{.}}">
@@ -207,6 +232,8 @@
 
   {{ partial "custom_head" . }}
 
-  <title>{{ if not .IsHome }}{{ .Title }} | {{ end }}{{ site.Title }}</title>
+  <title>{{ .Scratch.Get "page_title" }}</title>
+
+  {{ partial "jsonld.html" (dict "page" . "image" $og_image "desc" $desc) }}
 
 </head>

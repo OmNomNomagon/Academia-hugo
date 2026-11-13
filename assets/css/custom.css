@@ -300,8 +300,8 @@ a.btn,
     border-color: #1065B8;
 }
 
-.section-heading h1::before,
-.section-heading h1::after 
+.section-heading h2::before,
+.section-heading h2::after 
 {
 	background-color: #1065B8;
 }
@@ -528,8 +528,8 @@ pre, code {
 /* Tracking tightened from the theme's 4px to 3px on chevron headings. It lives
    in one custom property because the right gap depends on it: tracking trails
    the last letter too, so the right margin subtracts it to keep both gaps equal. */
-.section-heading h1:has(.title-chev),
-.center-text h1:has(.title-chev) {
+.section-heading h2:has(.title-chev),
+.center-text h2:has(.title-chev) {
     --title-track: 3px;
     letter-spacing: var(--title-track);
     /* Theme gives 10px; doubled so the two-line quote reads as separate from
@@ -539,8 +539,8 @@ pre, code {
 /* Subtitle under a chevron heading: sentence case rather than the theme's
    uppercase, and a step smaller (1.1rem -> 1rem) so the two-line quote reads
    as a quiet aside under the heading. */
-.section-heading h1:has(.title-chev) + p,
-.center-text h1:has(.title-chev) + p {
+.section-heading h2:has(.title-chev) + p,
+.center-text h2:has(.title-chev) + p {
     text-transform: none;
     font-size: calc(1rem - 2px);
     line-height: 1.5;
@@ -549,8 +549,8 @@ pre, code {
 .title-chev--right { margin-left: calc(0.6em - var(--title-track, 4px)); }
 
 /* The theme's decorative end dots are dropped when the chevrons are on. */
-.section-heading h1:has(.title-chev)::before,
-.section-heading h1:has(.title-chev)::after {
+.section-heading h2:has(.title-chev)::before,
+.section-heading h2:has(.title-chev)::after {
     display: none;
 }
 
@@ -707,10 +707,10 @@ pre, code {
 /* The theme's _dark.scss covers its own components; these cover ours. Colours
    are picked for contrast against the theme's dark backgrounds (#212529,
    #282a36, #343a40 on cards). */
-.dark .section-heading h1 {
+.dark .section-heading h2 {
     color: #e9ecef;
 }
-.dark .section-heading h1 + p {
+.dark .section-heading h2 + p {
     color: #a9adb5;
 }
 /* Chevron emphasis flips: on a dark ground the bright blue reads as "nearest",

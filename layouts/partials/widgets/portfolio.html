@@ -19,7 +19,7 @@
 <div class="row">
   <div class="col-12 text-center section-heading">
 
-    {{ with $st.Title }}<h1>{{ $chevL | safeHTML }}{{ . | markdownify | emojify }}{{ $chevR | safeHTML }}</h1>{{ end }}
+    {{ with $st.Title }}<h2>{{ $chevL | safeHTML }}{{ . | markdownify | emojify }}{{ $chevR | safeHTML }}</h2>{{ end }}
     {{ with $st.Params.subtitle }}<p>{{ . | markdownify | emojify }}</p>{{ end }}
 
   </div>
@@ -29,7 +29,7 @@
     {{/* Single column layout. */}}
 
     <div class="center-text">
-      {{ with $st.Title }}<h1 class="mt-0">{{ $chevL | safeHTML }}{{ . | markdownify | emojify }}{{ $chevR | safeHTML }}</h1>{{ end }}
+      {{ with $st.Title }}<h2 class="mt-0">{{ $chevL | safeHTML }}{{ . | markdownify | emojify }}{{ $chevR | safeHTML }}</h2>{{ end }}
       {{ with $st.Params.subtitle }}<p>{{ . | markdownify | emojify }}</p>{{ end }}
     </div>
     <div>

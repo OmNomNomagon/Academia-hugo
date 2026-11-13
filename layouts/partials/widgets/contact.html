@@ -6,11 +6,11 @@
 <div class="row contact-widget">
   <div class="col-12 text-center section-heading">
     {{/* `title_chevrons = true` brackets the heading as << Title >>; see title_chev.html. */}}
-    <h1>
+    <h2>
       {{- if $page.Params.title_chevrons }}{{ partial "title_chev.html" "left" }}{{ end -}}
       {{- with $page.Title }}{{ . | markdownify }}{{ end -}}
       {{- if $page.Params.title_chevrons }}{{ partial "title_chev.html" "right" }}{{ end -}}
-    </h1>
+    </h2>
     {{ with $page.Params.subtitle }}<p>{{ . | markdownify }}</p>{{ end }}
   </div>
   <div class="col-12">

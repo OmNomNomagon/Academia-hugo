@@ -7,7 +7,10 @@
   <div class="article-style" itemprop="articleBody">{{ . }}</div>
   {{ end }}
 
-  {{ $paginator := .Paginate .Data.Pages }}
+  {{/* Project cards (content/project) are grid entries that redirect to their
+       write-ups, which are tagged too: listing both showed every project twice
+       on tag pages, half of them via a redirect. List only the real pages. */}}
+  {{ $paginator := .Paginate (where .Data.Pages "Type" "ne" "project") }}
   {{ range $paginator.Pages }}
   <div>
     <h2><a href="{{ .RelPermalink }}">{{ .Title }}</a></h2>

@@ -1,0 +1,61 @@
+{{- /* Structured data (schema.org JSON-LD) so search engines can identify the
+     site's author and what each page is. Built as Hugo maps and encoded with
+     jsonify, so quotes or ampersands in titles can never produce invalid JSON.
+     - Every page: the Person (Mark Riganti) and the WebSite.
+     - Project write-ups and docs pages: an Article by that Person, with the
+       page's share image (passed in from site_head) and dates.
+     Profile links (sameAs) come from params.contact_links, so adding a social
+     link there also tells search engines it is the same person. */ -}}
+{{- $page := .page -}}
+{{- $image := .image -}}
+{{- $desc := .desc -}}
+{{- $siteURL := site.BaseURL | absURL -}}
+{{- $personID := printf "%s#person" $siteURL -}}
+
+{{- $sameAs := slice -}}
+{{- range site.Params.contact_links -}}
+  {{- if strings.HasPrefix .link "http" }}{{ $sameAs = $sameAs | append .link }}{{ end -}}
+{{- end -}}
+
+{{- $person := dict
+    "@type" "Person"
+    "@id" $personID
+    "name" "Mark Riganti"
+    "url" $siteURL
+    "jobTitle" "Tinkerer, Maker and Coder"
+    "knowsAbout" (slice "Woodworking" "3D design" "3D printing" "Electronics" "Audio" "Software development")
+-}}
+{{- with $sameAs }}{{ $person = merge $person (dict "sameAs" .) }}{{ end -}}
+
+{{- $website := dict
+    "@type" "WebSite"
+    "@id" (printf "%s#website" $siteURL)
+    "url" $siteURL
+    "name" site.Title
+    "description" (site.Params.sitedescription | default site.Params.description)
+    "inLanguage" "en"
+    "author" (dict "@id" $personID)
+-}}
+
+{{- $graph := slice $person $website -}}
+
+{{- if and $page.IsPage (in (slice "build" "docs") $page.Section) -}}
+  {{- $article := dict
+      "@type" "Article"
+      "@id" (printf "%s#article" $page.Permalink)
+      "headline" $page.Title
+      "url" $page.Permalink
+      "mainEntityOfPage" $page.Permalink
+      "author" (dict "@id" $personID)
+      "publisher" (dict "@id" $personID)
+      "isPartOf" (dict "@id" (printf "%s#website" $siteURL))
+      "inLanguage" "en"
+  -}}
+  {{- with $desc }}{{ $article = merge $article (dict "description" (. | plainify)) }}{{ end -}}
+  {{- with $image }}{{ $article = merge $article (dict "image" .) }}{{ end -}}
+  {{- if not $page.Date.IsZero }}{{ $article = merge $article (dict "datePublished" ($page.Date.Format "2006-01-02T15:04:05Z07:00")) }}{{ end -}}
+  {{- if not $page.Lastmod.IsZero }}{{ $article = merge $article (dict "dateModified" ($page.Lastmod.Format "2006-01-02T15:04:05Z07:00")) }}{{ end -}}
+  {{- with $page.Params.tags }}{{ $article = merge $article (dict "keywords" (delimit . ", ")) }}{{ end -}}
+  {{- $graph = $graph | append $article -}}
+{{- end }}
+<script type="application/ld+json">{{ dict "@context" "https://schema.org" "@graph" $graph | jsonify | safeJS }}</script>

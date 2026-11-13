@@ -28,7 +28,7 @@
   // docs anchors) keeps the theme's behaviour.
   const SECTION_HEADING_GAP = 46;
   function anchorScrollTop($target) {
-    let $heading = $target.find('.section-heading h1').first();
+    let $heading = $target.find('.section-heading h2').first();
     if ($heading.length) {
       return Math.max(0, $heading.offset().top - navbar_offset - SECTION_HEADING_GAP);
     }
