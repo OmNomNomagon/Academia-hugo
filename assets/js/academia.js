@@ -21,6 +21,20 @@
    * If it exists on current page, scroll to it responsively.
    * If `target` argument omitted (e.g. after event), assume it's the window's hash.
    */
+  // Where a scroll to `$target` should stop. Homepage sections carry ~110px of
+  // top padding, so stopping at the section's top edge left a big empty band
+  // under the navbar. When the target has a section heading, land with that
+  // heading a fixed 46px below the navbar instead; anything else (footnotes,
+  // docs anchors) keeps the theme's behaviour.
+  const SECTION_HEADING_GAP = 46;
+  function anchorScrollTop($target) {
+    let $heading = $target.find('.section-heading h1').first();
+    if ($heading.length) {
+      return Math.max(0, $heading.offset().top - navbar_offset - SECTION_HEADING_GAP);
+    }
+    return $target.offset().top - navbar_offset;
+  }
+
   function scrollToAnchor(target) {
     // If `target` is undefined or HashChangeEvent object, set it to window's hash.
     target = (typeof target === 'undefined' || typeof target === 'object') ? window.location.hash : target;
@@ -31,7 +45,7 @@
     if ($(target).length) {
       $('body').addClass('scrolling');
       $('html, body').animate({
-        scrollTop: $(target).offset().top - navbar_offset
+        scrollTop: anchorScrollTop($(target))
       }, 600, function () {
         $('body').removeClass('scrolling');
       });
@@ -69,12 +83,16 @@
   // animation scroll js
   var html_body = $('html, body');
   $('nav a, .page-scroll').on('click', function () { //use page-scroll class in any HTML tag for scrolling
+    // A bare "#" (the day/night toggle, dropdown parents) has no target: without
+    // this guard `$('[name=]')` throws, and jQuery then skips every later click
+    // handler on the link, including the toggle's own.
+    if (!this.hash || this.hash === '#') return;
     if (location.pathname.replace(/^\//, '') === this.pathname.replace(/^\//, '') && location.hostname === this.hostname) {
       var target = $(this.hash);
       target = target.length ? target : $('[name=' + this.hash.slice(1) + ']');
       if (target.length) {
         html_body.animate({
-          scrollTop: target.offset().top - navbar_offset
+          scrollTop: anchorScrollTop(target)
         }, 1500, 'easeInOutExpo');
         return false;
       }
@@ -324,43 +342,73 @@
    * Toggle day/night mode.
    * --------------------------------------------------------------------------- */
 
+  // Day/night follows the operating system unless the visitor has picked one
+  // with the toggle. A saved pick is stored as '1' (dark) or '0' (light); no
+  // entry means "follow the system". The inline script in baseof.html makes
+  // the same decision before first paint; this keeps it in sync afterwards.
+  const darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+  function savedDarkMode() {
+    try {
+      let v = localStorage.getItem('dark_mode');
+      return v === '1' || v === '0' ? v : null;
+    } catch (e) {
+      return null; // Storage blocked (private mode, site data off): follow the system.
+    }
+  }
+
+  function systemIsDark() {
+    return !!(darkQuery && darkQuery.matches);
+  }
+
+  function wantsDark() {
+    let saved = savedDarkMode();
+    return saved === null ? systemIsDark() : saved === '1';
+  }
+
+  function applyDarkMode(dark, codeHlEnabled, codeHlLight, codeHlDark) {
+    $('body').toggleClass('dark', dark);
+    document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+    if (codeHlEnabled) {
+      codeHlLight.disabled = dark;
+      codeHlDark.disabled = !dark;
+    }
+    $('.js-dark-toggle i').toggleClass('fa-sun', dark).toggleClass('fa-moon', !dark);
+    // Re-theme the Giscus comments iframe, if the page has one, without a reload.
+    let giscus = document.querySelector('iframe.giscus-frame');
+    if (giscus && giscus.contentWindow) {
+      let theme = giscus.closest('.comments') && giscus.closest('.comments').dataset;
+      giscus.contentWindow.postMessage({
+        giscus: { setConfig: { theme: dark ? (theme.themeDark || 'dark_dimmed') : (theme.themeLight || 'light') } }
+      }, 'https://giscus.app');
+    }
+    $('.js-dark-toggle')
+      .attr('aria-pressed', dark ? 'true' : 'false')
+      .attr('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode')
+      .attr('title', dark ? 'Switch to light mode' : 'Switch to dark mode');
+  }
+
   function toggleDarkMode(codeHlEnabled, codeHlLight, codeHlDark, diagramEnabled) {
-    if ($('body').hasClass('dark')) {
-      $('body').css({
-        opacity: 0,
-        visibility: 'visible'
-      }).animate({
-        opacity: 1
-      }, 500);
-      $('body').removeClass('dark');
-      if (codeHlEnabled) {
-        codeHlLight.disabled = false;
-        codeHlDark.disabled = true;
+    let dark = !$('body').hasClass('dark');
+    // Picking what the system already says clears the override, so the site
+    // goes back to following the system (and its schedule) from then on.
+    try {
+      if (dark === systemIsDark()) {
+        localStorage.removeItem('dark_mode');
+      } else {
+        localStorage.setItem('dark_mode', dark ? '1' : '0');
       }
-      $('.js-dark-toggle i').removeClass('fa-sun').addClass('fa-moon');
-      localStorage.setItem('dark_mode', '0');
-      if (diagramEnabled) {
-        // TODO: Investigate Mermaid.js approach to re-render diagrams with new theme without reloading.
-        location.reload();
-      }
-    } else {
-      $('body').css({
-        opacity: 0,
-        visibility: 'visible'
-      }).animate({
-        opacity: 1
-      }, 500);
-      $('body').addClass('dark');
-      if (codeHlEnabled) {
-        codeHlLight.disabled = true;
-        codeHlDark.disabled = false;
-      }
-      $('.js-dark-toggle i').removeClass('fa-moon').addClass('fa-sun');
-      localStorage.setItem('dark_mode', '1');
-      if (diagramEnabled) {
-        // TODO: Investigate Mermaid.js approach to re-render diagrams with new theme without reloading.
-        location.reload();
-      }
+    } catch (e) {}
+    $('body').css({
+      opacity: 0,
+      visibility: 'visible'
+    }).animate({
+      opacity: 1
+    }, 500);
+    applyDarkMode(dark, codeHlEnabled, codeHlLight, codeHlDark);
+    if (diagramEnabled) {
+      // TODO: Investigate Mermaid.js approach to re-render diagrams with new theme without reloading.
+      location.reload();
     }
   }
 
@@ -394,50 +442,41 @@
     $('#TableOfContents li').addClass('nav-item');
     $('#TableOfContents li a').addClass('nav-link');
 
-    // Set dark mode if user chose it.
-    let default_mode = 0;
-    if ($('body').hasClass('dark')) {
-      default_mode = 1;
-    }
-    let dark_mode = parseInt(localStorage.getItem('dark_mode') || default_mode);
-
     // Is code highlighting enabled in site config?
     const codeHlEnabled = $('link[title=hl-light]').length > 0;
     const codeHlLight = $('link[title=hl-light]')[0];
     const codeHlDark = $('link[title=hl-dark]')[0];
     const diagramEnabled = $('script[title=mermaid]').length > 0;
 
-    if (dark_mode) {
-      $('body').addClass('dark');
-      if (codeHlEnabled) {
-        codeHlLight.disabled = true;
-        codeHlDark.disabled = false;
-      }
+    // Day/night: only when the site offers it. Without `day_night`, keep the
+    // colour theme's own light/dark setting untouched.
+    if ($('.js-dark-toggle').length) {
+      let dark = wantsDark();
+      applyDarkMode(dark, codeHlEnabled, codeHlLight, codeHlDark);
       if (diagramEnabled) {
-        mermaid.initialize({
-          theme: 'dark'
-        });
+        mermaid.initialize({ theme: dark ? 'dark' : 'default' });
       }
-      $('.js-dark-toggle i').removeClass('fa-moon').addClass('fa-sun');
-    } else {
-      $('body').removeClass('dark');
-      if (codeHlEnabled) {
-        codeHlLight.disabled = false;
-        codeHlDark.disabled = true;
-      }
-      if (diagramEnabled) {
-        mermaid.initialize({
-          theme: 'default'
-        });
-      }
-      $('.js-dark-toggle i').removeClass('fa-sun').addClass('fa-moon');
-    }
 
-    // Toggle day/night mode.
-    $('.js-dark-toggle').click(function (e) {
-      e.preventDefault();
-      toggleDarkMode(codeHlEnabled, codeHlLight, codeHlDark, diagramEnabled);
-    });
+      $('.js-dark-toggle').click(function (e) {
+        e.preventDefault();
+        toggleDarkMode(codeHlEnabled, codeHlLight, codeHlDark, diagramEnabled);
+      });
+
+      // Follow the system live (e.g. an automatic sunset switch) for as long
+      // as the visitor has not overridden it.
+      if (darkQuery) {
+        let onSystemChange = function () {
+          if (savedDarkMode() === null) {
+            applyDarkMode(systemIsDark(), codeHlEnabled, codeHlLight, codeHlDark);
+          }
+        };
+        if (darkQuery.addEventListener) {
+          darkQuery.addEventListener('change', onSystemChange);
+        } else if (darkQuery.addListener) {
+          darkQuery.addListener(onSystemChange); // Safari < 14
+        }
+      }
+    }
   });
 
   /* ---------------------------------------------------------------------------

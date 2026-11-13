@@ -1,0 +1,22 @@
+{{/* Collapsible section, for long build logs:
+
+       {{< expand "Wiring details" >}}
+       Any **Markdown** here, hidden until clicked.
+       {{< /expand >}}
+
+     Adapted from upstream 72261f0, rebuilt on native <details>/<summary>: it
+     opens with keyboard and screen readers, needs no JavaScript, and the inner
+     Markdown is rendered (upstream piped .Inner through safeHTML, so Markdown
+     inside it came out as raw text). The title defaults to "Expand". */}}
+{{- $title := "Expand" -}}
+{{- if .IsNamedParams -}}
+  {{- $title = .Get "title" | default $title -}}
+{{- else -}}
+  {{- $title = .Get 0 | default $title -}}
+{{- end -}}
+<details class="expand">
+  <summary class="expand-label">{{ $title | markdownify }}</summary>
+  <div class="expand-content">
+    {{ .Inner | .Page.RenderString (dict "display" "block") }}
+  </div>
+</details>

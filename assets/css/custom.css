@@ -235,7 +235,22 @@ footer p {
 
 .post-nav {
 	margin-bottom: 50px;
-
+	/* Previous left, Next right, on one line. Each side takes at most half,
+	   so long titles wrap within their own column rather than colliding. */
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 2rem;
+}
+.post-nav .post-nav-item {
+	width: auto;
+	max-width: calc(50% - 1rem);
+}
+/* margin-left: auto keeps Next on the right even when there is no Previous
+   (the first project in the order). */
+.post-nav .post-nav-item--next {
+	margin-left: auto;
+	text-align: right;
 }
 
 .home-section.wg-slider{
@@ -606,6 +621,123 @@ pre, code {
    matches the horizontal gap the inline whitespace leaves between buttons. */
 .project-filters .btn {
     margin-bottom: 4px;
+}
+
+/* --- Collapsible section: {{< expand "Title" >}} … {{< /expand >}} -------- */
+/* Native <details>; the marker is the site chevron, rotating when opened. */
+.expand {
+    margin: 1rem 0;
+    border-left: 2px solid #59A5F0;
+    padding-left: 0.9rem;
+}
+.expand > summary {
+    cursor: pointer;
+    list-style: none;
+    font-weight: 700;
+    color: #1065B8;
+}
+.expand > summary::-webkit-details-marker { display: none; }
+.expand > summary::before {
+    content: "";
+    display: inline-block;
+    width: 0.45em;
+    height: 0.45em;
+    margin-right: 0.55em;
+    border-right: 2px solid #59A5F0;
+    border-bottom: 2px solid #59A5F0;
+    transform: translateY(-0.12em) rotate(-45deg);
+    transition: transform 0.15s;
+}
+.expand[open] > summary::before {
+    transform: translateY(-0.2em) rotate(45deg);
+}
+.expand > summary:focus-visible {
+    outline: 2px solid #59A5F0;
+    outline-offset: 2px;
+}
+.expand-content {
+    padding-top: 0.6rem;
+}
+
+/* --- Comments (giscus) ---------------------------------------------------- */
+/* Author icons to the pager was 71px (icons 20 + container padding 20 + pager
+   margin 20 + item padding 11). Now 20 + 12 + 0 + 11 = 43px, matching the gap
+   below the pager, so it sits evenly between the author card and comments. */
+.article-widget:has(> .post-nav) {
+    padding-top: 12px;
+}
+.article-widget > .post-nav {
+    margin-top: 0;
+}
+
+/* Pager text to divider was 75px (pager padding 12 + the larger of the pager's
+   50px and this 60px margin). Now 12 + 28 = 40px: the pager's own bottom margin
+   is dropped when comments follow it, and this margin is reduced. */
+.post-nav:has(+ .comments) {
+    margin-bottom: 0;
+}
+.comments {
+    margin-top: 1.4rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+.comments-title {
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+}
+.dark .comments {
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+/* --- Dark mode ------------------------------------------------------------ */
+/* The theme's _dark.scss covers its own components; these cover ours. Colours
+   are picked for contrast against the theme's dark backgrounds (#212529,
+   #282a36, #343a40 on cards). */
+.dark .section-heading h1 {
+    color: #e9ecef;
+}
+.dark .section-heading h1 + p {
+    color: #a9adb5;
+}
+/* Chevron emphasis flips: on a dark ground the bright blue reads as "nearest",
+   and the dark #1065B8 almost vanishes as the inner mark. */
+.dark .title-chev svg.chev polyline {
+    stroke: #59A5F0;
+}
+.dark .title-chev svg.chev polyline + polyline {
+    stroke: #1065B8;
+}
+.dark .project-card h4 a {
+    color: #f1f3f5;
+}
+.dark .project-card .card-body p {
+    color: #b8bcc4;
+}
+.dark .project-sort__label {
+    color: #a0a4ad;
+}
+.dark .project-sort__select {
+    background-color: #2d303c;
+    border-color: #4a4f60;
+    color: #e9ecef;
+}
+.dark .project-sort__select:hover {
+    border-color: #59A5F0;
+}
+.dark .btn-outline-primary {
+    color: #59A5F0;
+    border-color: #59A5F0;
+}
+.dark .btn-outline-primary:hover,
+.dark .btn-outline-primary:focus-visible {
+    color: #fff;
+    background-color: #1065B8;
+    border-color: #1065B8;
+}
+.dark .expand > summary {
+    color: #59A5F0;
 }
 
 /* --- separator style "dot": CSS circles, also bracketing the line ---------- */

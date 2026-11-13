@@ -179,7 +179,9 @@
 
         {{ if site.Params.day_night }}
         <li class="nav-item">
-          <a class="nav-link js-dark-toggle" href="#"><i class="fas fa-moon" aria-hidden="true"></i></a>
+          {{/* role=button + aria-pressed: it toggles a state rather than navigating.
+               academia.js keeps the label, pressed state and icon current. */}}
+          <a class="nav-link js-dark-toggle" href="#" role="button" aria-pressed="false" aria-label="Switch to dark mode" title="Switch to dark mode"><i class="fas fa-moon" aria-hidden="true"></i></a>
         </li>
         {{ end }}
 

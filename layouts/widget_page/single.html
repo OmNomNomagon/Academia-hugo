@@ -72,7 +72,7 @@
 {{ if site.Params.section_pager }}
 <div class="article-container article-widget">
   {{ partial "section_pager.html" . }}
-  <div id="replybox"></div>
+  {{ partial "comments_giscus.html" . }}
 </div>
 {{ end }}
 

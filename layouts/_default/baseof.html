@@ -4,6 +4,23 @@
 {{ partial "site_head.html" . }}
 
 <body id="top" data-spy="scroll" data-target="{{ if or .IsHome (eq .Type "widget_page") }}#navbar-main{{else}}#TableOfContents{{end}}" data-offset="71" {{ if not (.Scratch.Get "light") }}class="dark"{{end}}>
+  {{- if site.Params.day_night }}
+  {{/* Decide day/night before first paint, so a dark-mode visitor never sees
+       a white flash while academia.js loads. A saved choice from the toggle
+       wins; otherwise follow the operating system. academia.js repeats the
+       same decision and keeps it in sync afterwards. color-scheme also flips
+       the browser's own scrollbars and form controls. */}}
+  <script>
+    (function () {
+      var dark;
+      try { var saved = localStorage.getItem('dark_mode'); } catch (e) {}
+      if (saved === '1' || saved === '0') { dark = saved === '1'; }
+      else { dark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches; }
+      if (dark) document.body.classList.add('dark');
+      document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+    })();
+  </script>
+  {{- end }}
 
   {{ partial "search" . }}
 
@@ -20,13 +37,5 @@
   {{ end }}
 
   {{ partial "citation.html" . }}
-  {{if $.Site.Params.replybox }}
-	<script>
-		window.replybox = {
-			site: {{ $.Site.Params.replybox }}, 
-		};
-	</script>
-	<script src="https://cdn.getreplybox.com/js/embed.js"></script>
-   {{end}}
 </body>
 </html>

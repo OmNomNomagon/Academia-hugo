@@ -1,0 +1,71 @@
+{{/* Giscus comments: each page's thread is a GitHub Discussion, matched by URL
+     path. Configure under [params.giscus] in params.toml; nothing renders until
+     repo_id and category_id are filled in, so a half-set-up config never shows
+     a broken box. A page can opt out with `comments: false` in its front matter.
+
+     The script is injected by JS rather than written as a <script> tag so the
+     first theme matches the site's day/night state (system setting or the
+     toggle's override), which a static data-theme attribute cannot know.
+     academia.js then re-themes the iframe live when the toggle is used. */}}
+{{- $g := site.Params.giscus -}}
+{{- if and $g $g.repo_id $g.category_id (ne .Params.comments false) -}}
+{{- $light := $g.theme_light | default "light" -}}
+{{- $dark := $g.theme_dark | default "dark_dimmed" -}}
+{{/* Custom themes are full https URLs (giscus.app loads them inside its iframe,
+     and browsers block it from loading localhost, so they always point at the
+     live site). A bare relative ".css" path is still made absolute for
+     completeness. Built-in names ("light", "dark_dimmed"...) pass through. */}}
+{{/* A value ending in .css that isn't a full URL is a theme file under assets/
+     (e.g. "css/giscus-light.css"). Live builds publish it and give giscus its
+     https address. Local preview hands over the contents as a data: URL
+     instead: browsers block giscus.app (a public site) from fetching localhost.
+     Going through resources.Get means Hugo tracks the file, so an edit to the
+     theme rebuilds the page and shows on the next refresh. */}}
+{{- $themes := dict "light" $light "dark" $dark -}}
+{{- range $mode, $t := $themes -}}
+  {{- if and (strings.HasSuffix $t ".css") (not (strings.HasPrefix $t "http")) -}}
+    {{- with resources.Get $t -}}
+      {{- $url := .Permalink -}}
+      {{- if hugo.IsServer }}{{ $url = printf "data:text/css;base64,%s" (.Content | base64Encode) }}{{ end -}}
+      {{- $themes = merge $themes (dict $mode $url) -}}
+    {{- else -}}
+      {{- warnf "giscus: theme %q not found under assets/" $t -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $light = $themes.light -}}
+{{- $dark = $themes.dark -}}
+<section class="comments" aria-label="Comments" data-theme-light="{{ $light }}" data-theme-dark="{{ $dark }}">
+  <h2 class="comments-title">Comments</h2>
+  <div class="giscus"></div>
+  <script>
+    (function () {
+      var section = document.currentScript.parentNode;
+      var dark = document.body.classList.contains('dark');
+      var s = document.createElement('script');
+      s.src = 'https://giscus.app/client.js';
+      s.async = true;
+      s.crossOrigin = 'anonymous';
+      var attrs = {
+        'data-repo': {{ $g.repo }},
+        'data-repo-id': {{ $g.repo_id }},
+        'data-category': {{ $g.category | default "Comments" }},
+        'data-category-id': {{ $g.category_id }},
+        'data-mapping': 'pathname',
+        'data-strict': '1',
+        // Off: drops the "0 reactions" block above the thread. Individual
+        // comments keep their own reactions.
+        'data-reactions-enabled': {{ cond (eq $g.reactions true) "1" "0" }},
+        'data-emit-metadata': '0',
+        'data-input-position': 'top',
+        'data-lang': 'en',
+        'data-loading': 'lazy',
+        'data-theme': dark ? section.dataset.themeDark : section.dataset.themeLight
+      };
+      for (var k in attrs) s.setAttribute(k, attrs[k]);
+      section.appendChild(s);
+    })();
+  </script>
+  <noscript>Comments are powered by <a href="https://giscus.app">giscus</a> and need JavaScript.</noscript>
+</section>
+{{- end -}}

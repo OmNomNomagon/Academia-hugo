@@ -1,18 +1,24 @@
-{{ $str := "" }}
-<div class="post-nav">
-  {{if .NextInSection}}
-  {{/* For the docs layout, prev/next labels are reversed. */}}
-  {{ if eq .Type "docs" }}{{ $str = "previous" }}{{else}}{{ $str = "next" }}{{end}}
-  <div class="post-nav-item">
-    <div class="meta-nav">{{ i18n $str }}</div>
-    <a href="{{.NextInSection.RelPermalink}}" rel="next">{{.NextInSection.Title}}</a>
+{{/* Previous on the left, Next on the right, on one line.
+     Which neighbour counts as "previous" depends on the layout: the docs
+     section reads its pages in reverse (theme behaviour, kept as-is), so there
+     the left item is Hugo's NextInSection. Working out left/right first keeps
+     the label and the position in agreement for both kinds of page. */}}
+{{- $prev := .PrevInSection -}}
+{{- $next := .NextInSection -}}
+{{- if eq .Type "docs" }}{{ $prev = .NextInSection }}{{ $next = .PrevInSection }}{{ end -}}
+{{- if or $prev $next }}
+<nav class="post-nav" aria-label="More projects">
+  {{- with $prev }}
+  <div class="post-nav-item post-nav-item--prev">
+    <div class="meta-nav">{{ i18n "previous" }}</div>
+    <a href="{{ .RelPermalink }}" rel="prev">{{ .Title }}</a>
   </div>
-  {{end}}
-  {{if .PrevInSection}}
-  {{ if eq .Type "docs" }}{{ $str = "next" }}{{else}}{{ $str = "previous" }}{{end}}
-  <div class="post-nav-item">
-    <div class="meta-nav">{{ i18n $str }}</div>
-    <a href="{{.PrevInSection.RelPermalink}}" rel="prev">{{.PrevInSection.Title}}</a>
+  {{- end }}
+  {{- with $next }}
+  <div class="post-nav-item post-nav-item--next">
+    <div class="meta-nav">{{ i18n "next" }}</div>
+    <a href="{{ .RelPermalink }}" rel="next">{{ .Title }}</a>
   </div>
-  {{end}}
-</div>
+  {{- end }}
+</nav>
+{{- end }}
