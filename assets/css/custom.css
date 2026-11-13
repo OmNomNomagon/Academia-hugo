@@ -28,9 +28,127 @@
 
 .navbar-light .navbar-brand {
     font-weight: 500;
-	letter-spacing: 2.5px;
+	letter-spacing: 1.4px;
 	font-size: 1.15rem;
 
+}
+
+/* The separators in "Code · Cad · Carve · Create" pick up the site blue, sized
+   up so the dot reads as a deliberate mark rather than a stray full stop.
+   line-height:0 keeps the enlarged glyph from growing the navbar's line box.
+   No negative margin here: the config string already contains a real space
+   either side, and pulling more than about -0.05em swallows it completely,
+   collapsing the brand to "Code·Cad·Carve·Create". */
+.navbar-brand .brand-sep {
+	color: #59A5F0;
+}
+
+/* Chevrons. No scaleY or `top` nudge here: unlike `/`, the `>` glyph already sits
+   around the middle of the band with no descender, so it needs no correction. The
+   tracking is tighter than the slashes' because `>>` is a wider pair to begin with. */
+.navbar-brand .brand-sep--chev {
+	margin-left: 0.14em;
+	margin-right: 0.1em;
+}
+
+/* SVG chevrons. Height = Lato's cap height (0.74em: 17px at 23px), so the chevron spans exactly
+   baseline to cap line. Stroke = 13 viewBox units = 0.13em, the measured stroke of
+   Lato 700's own `>` -- same thickness, just taller and roughly half the width.
+   vertical-align: baseline puts the SVG's bottom edge on the text baseline. */
+/* Unscoped: the hero tagline uses the same SVG, and only overrides the stroke. */
+svg.chev {
+	display: inline-block;
+	height: 0.74em;
+	vertical-align: baseline;
+	overflow: visible;
+}
+
+svg.chev--double { width: 0.64em; }
+svg.chev--single { width: 0.28em; }
+
+svg.chev polyline {
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 13;
+	stroke-linejoin: bevel;
+	stroke-linecap: butt;
+}
+
+.navbar-brand .brand-trail svg.chev {
+	margin-right: 0.12em;
+}
+
+/* Slashes need no vertical correction -- they already span the cap height.
+   Weight 700 rather than the brand's 500: Lato is only loaded at 400 and 700, so
+   700 is a real heavier cut while 500 falls back to 400. Positive tracking opens
+   the pair up instead of welding it into one mark.
+   `letter-spacing` also applies after the LAST character, so the right margin is
+   reduced to cancel that trailing space and keep the pair visually centred. */
+.navbar-brand .brand-sep--slash {
+	font-weight: 700;
+	/* Gap between the two slashes: 0.16em less 15%. */
+	letter-spacing: 0.136em;
+	/* Gap history either side: 4.6px, -30% to 3.22px, -20% again to 2.58px =
+	   0.112em at the brand's 23px. The right margin is NEGATIVE because the
+	   letter-spacing already trails the last slash (now 3.13px), which is more
+	   than the target gap on its own, so it has to be clawed back. Shrink the
+	   letter-spacing and this value must shrink with it or the right gap grows. */
+	/* ...now -20% again: 2.06px = 0.09em. Right margin re-derived against the
+	   3.13px of trailing letter-space: 2.06 - 3.13 = -1.07px = -0.046em. */
+	margin-left: 0.09em;
+	margin-right: -0.046em;
+	/* 700 is the heaviest Lato loaded here, so weight cannot go further. Outlining
+	   the glyph thickens the stroke instead. Measured by rendering the glyph at 8x
+	   and scanning for the widest ink run: 2.38px bare, 3.13px at 0.7px of stroke,
+	   2.63px at 0.3px -- the value in use. Non-standard but supported in every
+	   current browser; where it is not, the slashes simply stay at 700. */
+	-webkit-text-stroke: 0.3px currentColor;
+	/* 80% of the glyph's natural height. Transforms do not apply to inline
+	   elements, hence inline-block.
+
+	   `center`, not `bottom`. Measured at 23px Lato: the band is 23 ascent / 5
+	   descent, "Code" has 17 ink ascent and 0 descent so it sits exactly on the
+	   baseline, and "/" has 17 ascent and 1 descent. Solving for the origin that
+	   puts the scaled slash's ink bottom back on the baseline gives 50.6% of the
+	   box height -- centre, to within a twentieth of a pixel.
+	   `bottom` anchors to the inline-block's LINE box, which sits ~7px below the
+	   text's descender line, so scaling toward it pushes the glyph visibly low. */
+	display: inline-block;
+	transform: scaleY(0.8);
+	transform-origin: center;
+	/* Centre leaves the ink bottom 0.89px ABOVE the text's; this drops it level.
+	   In em so it tracks the responsive root size. */
+	position: relative;
+	top: 0.039em;
+}
+
+/* Fading trail after the wordmark. Same weight and tracking as the separators so
+   it reads as the same mark continuing, just dissolving. */
+.navbar-brand .brand-trail {
+	color: #59A5F0;
+	font-weight: 700;
+	/* Matches the separators throughout, so the trail reads as the same mark
+	   continuing rather than a different one. */
+	letter-spacing: 0.136em;
+	/* 0.34em reduced by 30%. */
+	margin-left: 0.24em;
+	-webkit-text-stroke: 0.3px currentColor;
+	/* No scaleY/top correction here. Those were derived for the `/` glyph, which
+	   descends below the baseline; `>` sits mid-band and needs neither. If the
+	   trail character goes back to `/`, reinstate them from the --slash rule. */
+}
+
+.navbar-brand .brand-sep--dot {
+	font-size: 1.45em;
+	line-height: 0;
+	/* Measured rather than guessed. In Lato at 23px the cap height is 17px, so the
+	   capitals' optical centre is 9px above the baseline; the middle dot's ink
+	   centre sits 10px above its own baseline. Aligning baselines therefore puts
+	   the dot 1px high, and 1px down lands it dead centre. `vertical-align: middle`
+	   aligns to half x-height instead, which is what made it sit low. */
+	vertical-align: baseline;
+	position: relative;
+	top: 1px;
 }
 
 .card h4 {
@@ -56,7 +174,12 @@
 }
 
 .navbar-brand {
-    display: inline-flex;
+	/* NOT inline-flex. This element holds only text (the logo is a sibling), and
+	   in a flex container each run of text becomes an anonymous flex item whose
+	   leading and trailing whitespace is trimmed. Once the colons were wrapped in
+	   spans that split the brand into five items, and every space between them
+	   disappeared -- "Code : Cad" rendered as "Code:Cad". */
+    display: inline-block;
 	margin-right: 30px;
     padding-top: 5px;
 	padding-bottom: 5px;
@@ -218,4 +341,340 @@ a.nav-link:hover
 pre, code {
     color: #59A5F0;
     background-color: #f9f2f4;
+}
+
+/* ---------------------------------------------------------------------------
+   Slider
+   Photos are real <img> elements layered behind a caption that does NOT move
+   with the slides. Using <img> rather than a CSS background is what makes
+   srcset, sizes, fetchpriority and lazy loading possible at all.
+
+   The caption used to live inside .wg-hero.dark, so moving it out silently
+   dropped that block's `color: #fff` and its `.btn` styling. Both restored here.
+   --------------------------------------------------------------------------- */
+
+.wg-slider {
+    position: relative;
+}
+
+.carousel-item .hero-bg,
+.carousel-item .hero-tint {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+.carousel-item .hero-bg {
+    display: block;
+    z-index: 0;
+}
+
+.carousel-item .hero-bg img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.carousel-item .hero-tint {
+    z-index: 1;
+}
+
+.hero-static {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 3;
+    pointer-events: none;
+}
+
+/* The button is anchored to the slider's midline and the heading sits above it.
+   Centring the pair as one block would instead put the midline BETWEEN them,
+   leaving the heading above centre and the button below it. Anchoring each to
+   the 50% line keeps the button exactly centred whatever the heading wraps to. */
+.hero-static .container {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    max-width: none;
+}
+
+.hero-static .hero-text {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 50%;
+    margin: 0 0 2.4rem 0;
+    padding: 0 1rem;
+}
+
+/* No text-shadow: the 0.55 tint on every slide already carries the contrast,
+   and the shadow made the type read harder than the original treatment. */
+.hero-static .hero-title,
+.hero-static .hero-lead,
+.hero-static .hero-cta-alt,
+.hero-static .hero-note > * {
+    color: #fff;
+}
+
+/* Matches the original caption treatment: plain uppercase, light weight, wide
+   tracking. It is an <h1> now rather than an empty heading plus a <p>, so the
+   page gets a real headline without changing how it looks. */
+/* NOTE: the root font size on this site is 20px, not the usual 16px, so 1rem is
+   20px here. The navbar brand sits at 23px; the hero title is deliberately kept
+   just under it rather than competing with it. */
+.hero-static .hero-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 300;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    line-height: 1.35;
+}
+
+/* A quiet strapline below the title, not a second headline. Sentence case, and
+   no max-width so it stays on one line wherever there is room; it still wraps
+   naturally at phone widths, where one line is not possible. */
+.hero-static .hero-lead {
+    text-transform: none;
+    font-size: 0.82rem;
+    font-weight: 300;
+    letter-spacing: 0.4px;
+    line-height: 1.6;
+    max-width: none;
+    margin: 0.47rem auto 0;
+}
+
+/* Decorative dots, matching the navbar brand. Drawn as CSS circles rather than
+   `·` glyphs, which keeps the crawlable text free of punctuation entirely and
+   makes size and position exact instead of font-dependent.
+   Purely presentational — the phrases themselves are real text. */
+/* The `//` inside the hero title, same accent and tracking as the tagline's. */
+.hero-static .hero-title .hero-title-sep {
+    color: #59A5F0;
+    letter-spacing: -0.06em;
+}
+
+/* --- separator style "slash": literal // between items -------------------- */
+.hero-static .hero-lead--slash .hero-sep {
+    color: #59A5F0;
+    /* Tightened so the pair reads as one mark rather than two strokes. */
+    letter-spacing: -0.06em;
+    margin: 0 0.24em;
+}
+
+/* --- separator style "chev": the navbar's SVG >> between items ------------- */
+.hero-static .hero-lead--chev .hero-sep {
+    color: #59A5F0;
+    margin: 0 0.24em;
+}
+
+/* The tagline is Open Sans, not Lato, and only its 400 weight is loaded (the
+   300 asked for falls back). Measured: stem 0.081em, cap height 0.72em. So the
+   chevron is 8 units (0.08em) of stroke against the banner's 13, and sized to
+   Open Sans's cap height, with the width scaled to keep the banner's shape. */
+.hero-static .hero-lead--chev svg.chev--double {
+    height: 0.72em;
+    width: 0.623em;
+}
+
+.hero-static .hero-lead--chev svg.chev polyline {
+    stroke-width: 8;
+}
+
+/* --- << Section title >> (portfolio widget, `title_chevrons = true`) ------- */
+/* Identical to the navbar chevrons: the span takes the brand's font size
+   (1.15rem), so the shared svg.chev rules -- 0.74em tall, 13-unit stroke --
+   produce exactly the banner's chevron, pixel for pixel. That makes it shorter
+   than the heading's caps, so it is lifted to sit centred on them:
+   (cap of heading - chevron height) / 2 = (0.72 * 1.5rem - 0.74 * 1.15rem) / 2. */
+.title-chev {
+    font-size: 1.15rem;
+    color: #59A5F0;
+}
+.title-chev svg.chev {
+    vertical-align: calc((0.72 * 1.5rem - 0.74 * 1.15rem) / 2);
+}
+/* The site's two blues, as on the filter buttons: the inner chevron (the first
+   polyline in both pairs, nearest the words) takes the dark "active" blue,
+   the outer one the light accent blue. Solid colours, no fade. */
+.title-chev svg.chev polyline {
+    stroke: #1065B8;
+}
+.title-chev svg.chev polyline + polyline {
+    stroke: #59A5F0;
+}
+/* Tracking tightened from the theme's 4px to 3px on chevron headings. It lives
+   in one custom property because the right gap depends on it: tracking trails
+   the last letter too, so the right margin subtracts it to keep both gaps equal. */
+.section-heading h1:has(.title-chev),
+.center-text h1:has(.title-chev) {
+    --title-track: 3px;
+    letter-spacing: var(--title-track);
+    /* Theme gives 10px; doubled so the two-line quote reads as separate from
+       the heading rather than hanging off it. rem, so it scales with the root. */
+    margin-bottom: 1rem;
+}
+/* Subtitle under a chevron heading: sentence case rather than the theme's
+   uppercase, and a step smaller (1.1rem -> 1rem) so the two-line quote reads
+   as a quiet aside under the heading. */
+.section-heading h1:has(.title-chev) + p,
+.center-text h1:has(.title-chev) + p {
+    text-transform: none;
+    font-size: calc(1rem - 2px);
+    line-height: 1.5;
+}
+.title-chev--left  { margin-right: 0.6em; }
+.title-chev--right { margin-left: calc(0.6em - var(--title-track, 4px)); }
+
+/* The theme's decorative end dots are dropped when the chevrons are on. */
+.section-heading h1:has(.title-chev)::before,
+.section-heading h1:has(.title-chev)::after {
+    display: none;
+}
+
+/* --- Project sort control ------------------------------------------------- */
+/* A plain dropdown, right-aligned just above the grid. Deliberately not button
+   coloured: the filters are the primary control, sorting is a quiet secondary
+   one. Square corners and a hairline border echo the cards below it; the arrow
+   is the site's chevron turned downward, in the light accent blue. */
+.project-sort {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0;
+}
+/* The toolbar normally leaves 40px before the grid; with the dropdown sitting
+   in that space, 12px keeps it visibly attached to the cards it sorts. */
+.project-toolbar:has(.project-sort) {
+    margin-bottom: 12px;
+}
+/* Buttons -> dropdown: 24px + 10% = 26.4px (theme list margin 20px + the
+   buttons' own 4px, so the list margin becomes 22.4px). */
+.project-toolbar:has(.project-sort) .project-filters ul {
+    margin-bottom: 22.4px;
+}
+/* Quote -> buttons: 60px - 25% = 45px. The quote keeps its 20px margin, and the
+   heading block's 40px drops to 25px. */
+.section-heading:has(.title-chev) {
+    margin-bottom: 25px;
+}
+/* Project cards 15% larger at their maximum. Cards are calc(33.3% - 40px) of
+   the grid, and the grid's container capped them at 437px (max-width 1500px).
+   Measured: 437px at 1500px, 495.7px at 1680px (the grid's own padding grows
+   too), so 437 * 1.15 = 502.6px needs 1700px. Scoped to the portfolio widget,
+   so other sections keep the 1500px cap. */
+.wg-portfolio .container {
+    max-width: 1700px;
+}
+.project-sort__label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    color: #8a8a8a;
+    font-size: 0.75rem;
+}
+.project-sort__select {
+    -webkit-appearance: none;
+    appearance: none;
+    border: 1px solid #d9d9d9;
+    border-radius: 0;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 74 40'%3E%3Cpolyline points='4,6 37,32 70,6' fill='none' stroke='%2359A5F0' stroke-width='9' stroke-linejoin='bevel'/%3E%3C/svg%3E") no-repeat right 0.7rem center / 0.65rem auto;
+    color: #444;
+    font: inherit;
+    font-size: 0.75rem;
+    padding: 0.35rem 2rem 0.35rem 0.75rem;
+    cursor: pointer;
+}
+.project-sort__select:hover {
+    border-color: #59A5F0;
+}
+.project-sort__select:focus {
+    outline: none;
+}
+.project-sort__select:focus-visible {
+    border-color: #1065B8;
+    box-shadow: 0 0 0 2px rgba(89, 165, 240, 0.35);
+}
+/* When the filter row wraps (on phones), wrapped rows otherwise touch. 4px
+   matches the horizontal gap the inline whitespace leaves between buttons. */
+.project-filters .btn {
+    margin-bottom: 4px;
+}
+
+/* --- separator style "dot": CSS circles, also bracketing the line ---------- */
+.hero-static .hero-lead--dot .hero-sep,
+.hero-static .hero-lead--dot .hero-rule {
+    display: inline-block;
+    /* Sized and offset in `em`, not `px`. The theme switches the root font size
+       from 16px to 20px at `min-width: 58em` (928px), so this line renders at
+       13.1px on a narrow window and 16.4px on a wide one. Fixed pixels would
+       leave the dots proportionally fat and misaligned at the smaller size. */
+    width: 0.25em;
+    height: 0.25em;
+    border-radius: 50%;
+    background-color: #59A5F0;
+    /* Baseline-aligned, so the box's bottom sits on the baseline and its centre
+       half its height above. Lifting a further 0.25em puts that centre near the
+       optical centre of this mixed-case line. Same reasoning as the navbar dot. */
+    vertical-align: baseline;
+    position: relative;
+    top: -0.25em;
+    /* Breathing room either side, on top of the literal spaces in the markup.
+       Those spaces stay for text extraction, so the real gap is this plus a
+       word space -- keep that in mind when tuning. */
+    margin: 0 0.22em;
+}
+
+.hero-static .hero-cta {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
+    padding: 0 1rem;
+}
+
+/* Matches the project filter buttons below exactly: same blue, same 400 weight,
+   same tracking. The old hero rule used 550 and 1.1px tracking, which read as a
+   different button even though the colour was identical. */
+.hero-static .hero-cta a {
+    pointer-events: auto;
+    background-color: #59A5F0;
+    border-color: #59A5F0;
+    color: #fff;
+    font-weight: 400;
+    letter-spacing: normal;
+    font-size: 18px;
+}
+
+/* `:focus-visible` rather than `:focus`. Clicking an anchor focuses it, and the
+   scroll handler calls preventDefault, so the link keeps focus and a plain
+   `:focus` rule would leave the button stuck dark after a click. focus-visible
+   only matches keyboard focus, so keyboard users still get the indicator. */
+.hero-static .hero-cta a:hover,
+.hero-static .hero-cta a:focus-visible {
+    background-color: #1065B8;
+    border-color: #1065B8;
+    color: #fff;
+}
+
+/* Without this the icon inherits the brand blue from a sitewide icon rule and
+   renders blue-on-blue inside the button, i.e. invisible. */
+.hero-static .hero-cta a i {
+    padding-left: 10px;
+    color: inherit;
+    font-size: 0.85em;
+}
+
+.wg-slider .carousel-control-prev,
+.wg-slider .carousel-control-next {
+    z-index: 4;
 }

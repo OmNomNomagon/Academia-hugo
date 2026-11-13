@@ -6,13 +6,20 @@
 {{ $items_type := $st.Params.content.page_type | default "project" }}
 {{ $columns := $st.Params.design.columns | default "2" }}
 
+{{/* `title_chevrons = true` brackets the heading as << Title >>; see title_chev.html. */}}
+{{ $chevL := "" }}{{ $chevR := "" }}
+{{ if $st.Params.title_chevrons }}
+  {{ $chevL = partial "title_chev.html" "left" }}
+  {{ $chevR = partial "title_chev.html" "right" }}
+{{ end }}
+
 {{ if ne $columns "1" }}
 {{/* Standard dual-column layout. */}}
 
 <div class="row">
   <div class="col-12 text-center section-heading">
 
-    {{ with $st.Title }}<h1>{{ . | markdownify | emojify }}</h1>{{ end }}
+    {{ with $st.Title }}<h1>{{ $chevL | safeHTML }}{{ . | markdownify | emojify }}{{ $chevR | safeHTML }}</h1>{{ end }}
     {{ with $st.Params.subtitle }}<p>{{ . | markdownify | emojify }}</p>{{ end }}
 
   </div>
@@ -22,7 +29,7 @@
     {{/* Single column layout. */}}
 
     <div class="center-text">
-      {{ with $st.Title }}<h1 class="mt-0">{{ . | markdownify | emojify }}</h1>{{ end }}
+      {{ with $st.Title }}<h1 class="mt-0">{{ $chevL | safeHTML }}{{ . | markdownify | emojify }}{{ $chevR | safeHTML }}</h1>{{ end }}
       {{ with $st.Params.subtitle }}<p>{{ . | markdownify | emojify }}</p>{{ end }}
     </div>
     <div>
@@ -59,6 +66,18 @@
               {{ end }}
             </li>
           </ul>
+        </div>
+        {{/* Sort control: a native <select>, right-aligned just above the grid.
+             Native so keyboard, screen reader and phone pickers all work for free;
+             the <label> wraps it, which associates the two without needing an id. */}}
+        <div class="project-sort">
+          <label class="project-sort__label">Sort by
+            <select class="project-sort__select">
+              <option value="default" selected>Default</option>
+              <option value="date">Newest</option>
+              <option value="type">Type</option>
+            </select>
+          </label>
         </div>
       </div>
       {{ end }}

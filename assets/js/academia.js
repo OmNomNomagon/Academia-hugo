@@ -484,14 +484,82 @@
 
       $container.imagesLoaded(function () {
         // Initialize Isotope after all images have loaded.
+        // Type rank comes from the filter buttons' order, so "Type" groups the
+        // cards in the same sequence as the buttons read (wood, 3d, audio...).
+        let typeRank = {};
+        $section.find('.project-filters a').each(function (i) {
+          let m = /\.js-id-(.+)$/.exec($(this).attr('data-filter') || '');
+          if (m) typeRank[m[1]] = i;
+        });
+
         $container.isotope({
           itemSelector: '.isotope-item',
           layoutMode: layout,
           masonry: {
             gutter: 20
           },
-          filter: $section.find('.default-project-filter').text()
+          filter: $section.find('.default-project-filter').text(),
+          getSortData: {
+            date: '[data-date] parseInt',
+            type: function (el) {
+              let t = el.getAttribute('data-type');
+              return t in typeRank ? typeRank[t] : 999;
+            }
+          },
+          // Ties fall back to the default order, so each group stays curated.
+          sortAscending: { date: false, type: true, 'original-order': true }
         });
+
+        // Sort dropdown. "default" is Isotope's built-in DOM order, which follows
+        // `weight`; the others fall back to it for ties.
+        let sortModes = {
+          default: 'original-order',
+          date: ['date', 'original-order'],
+          type: ['type', 'original-order']
+        };
+        let $sort = $section.find('.project-sort__select');
+        // Browsers can restore a form value on back/forward navigation, so apply
+        // whatever the select shows now rather than assuming "default".
+        if ($sort.val() && $sort.val() !== 'default') {
+          $container.isotope({ sortBy: sortModes[$sort.val()] });
+        }
+        $sort.on('change', function () {
+          $container.isotope({ sortBy: sortModes[this.value] || 'original-order' });
+        });
+
+        // Masonry packs whole columns, so the cards rarely reach the container's
+        // right edge (62px short at 1280px wide). Pad the dropdown's row by that
+        // shortfall so it lines up with the cards, and redo it after every layout,
+        // since resizing or filtering can change the column count.
+        let $sortRow = $section.find('.project-sort');
+        function alignSort() {
+          if (!$sortRow.length) return;
+          // Use Isotope's target positions, not the cards' on-screen rects: those
+          // are mid-animation during a re-layout, and before the first layout the
+          // cards still sit in normal flow across the full width.
+          let iso = $container.data('isotope');
+          if (!iso || !iso.filteredItems.length) return;
+          let span = 0;
+          iso.filteredItems.forEach(function (item) {
+            span = Math.max(span, item.position.x + item.size.outerWidth);
+          });
+          let box = $container[0].getBoundingClientRect();
+          let right = box.left + parseFloat($container.css('padding-left')) + span;
+          // The row's border edge does not move when its padding changes, so the
+          // padding needed is simply the distance from that edge to the cards.
+          let rowRight = $sortRow[0].getBoundingClientRect().right;
+          $sortRow.css('padding-right', Math.max(0, rowRight - right) + 'px');
+        }
+        $container.on('layoutComplete', alignSort);
+        alignSort();
+        // Masonry only re-lays out when the column count changes, so a window or
+        // scrollbar width change can move the row edge without any layoutComplete.
+        // Watch the row's own size too, and recheck once everything has loaded.
+        if (window.ResizeObserver && $sortRow.length) {
+          new ResizeObserver(function () { requestAnimationFrame(alignSort); })
+            .observe($sortRow[0].parentElement);
+        }
+        $(window).on('load', alignSort);
 
         // Filter items when filter link is clicked.
         $section.find('.project-filters a').click(function () {

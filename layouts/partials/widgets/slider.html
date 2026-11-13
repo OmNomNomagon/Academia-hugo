@@ -1,58 +1,165 @@
 {{ $ := .root }}
 {{ $page := .page }}
 {{ $hash_id := .hash_id }}
+{{ $items := $page.Params.item }}
+
+{{/* Candidate widths, overridable per slider with `image_widths` in front matter.
+     Narrower than you might expect is fine: these photos sit under a tint behind text,
+     so they tolerate an effective DPR well below the device's. A width larger than the
+     master is skipped rather than upscaled.
+     The default is the two-width set, because every project page carries its own
+     slider -- 164 images across 37 of them -- and each extra width multiplies the
+     number of variants Hugo has to encode. The homepage hero opts into the third. */}}
+{{ $widths := $page.Params.image_widths | default (slice 1280 1920) }}
 
 <!-- Indicators -->
 <ol class="carousel-indicators">
-  {{ range $index, $item := $page.Params.item }}
-  <li data-target="#{{$hash_id}}" data-slide-to="{{$index}}" {{if eq $index 0}}class="active"{{end}}></li>
+  {{ range $index, $item := $items }}
+  <li data-target="#{{ $hash_id }}" data-slide-to="{{ $index }}" {{ if eq $index 0 }}class="active"{{ end }}></li>
   {{ end }}
 </ol>
 
-<!-- Carousel slides wrapper -->
+<!-- Slides. Images only: the caption and button are static, rendered once below. -->
 <div class="carousel-inner">
-  {{ range $index, $item := $page.Params.item }}
-  <div class="wg-hero dark carousel-item{{if eq $index 0}} active{{end}}" style="{{with $page.Params.height}}{{printf "height: %s;" . | safeCSS}}{{end}}
-    {{ if $item.overlay_color }}
-    background-color: {{ $item.overlay_color | default "transparent" }};
-    {{ end }}
-    {{ if $item.overlay_img }}
-    background-image:
-    {{ if $item.overlay_filter }}linear-gradient(rgba(0, 0, 0, {{ $item.overlay_filter }}), rgba(0, 0, 0, {{ $item.overlay_filter }})), {{ end }}
-    url('{{ printf "img/%s" $item.overlay_img | absURL }}');
-    {{ end }}
-    ;">
-    <div class="container" style="text-align: {{$item.align | default "left"}};">
-        <h1 class="hero-title" itemprop="headline">
-          {{ with $item.title }}{{ . | markdownify | emojify }}{{ end }}
-        </h1>
+  {{ range $index, $item := $items }}
+  <div class="wg-hero dark carousel-item{{ if eq $index 0 }} active{{ end }}"
+       style="{{ with $page.Params.height }}{{ printf "height: %s;" . | safeCSS }}{{ end }}{{ with $item.overlay_color }}background-color: {{ . }};{{ end }}">
 
-        {{ with $item.content }}
-        <p class="hero-lead" style="{{if eq $item.align "center"}}margin: 0 auto 0 auto;{{else if eq $item.align "right"}}margin-left: auto; margin-right: 0{{end}}">
-          {{ . | markdownify | emojify }}
-        </p>
-        {{ end }}
+    {{ with $item.overlay_img }}
+      {{/* Slide 0 is the LCP element: fetch it eagerly at high priority and decode
+           synchronously, so it paints in one go rather than flashing in. Every other
+           slide is deferred entirely -- that deferral is the point of this work, since
+           eagerly loading all of them is what put megabytes above the fold. The cost
+           is that the first slide change may briefly show empty on a slow link.
+           Computed out here so the unprocessed fallback below gets them too. */}}
+      {{ $loading := "lazy" }}{{ $priority := "low" }}{{ $decoding := "async" }}
+      {{ if eq $index 0 }}
+        {{ $loading = "eager" }}{{ $priority = "high" }}{{ $decoding = "sync" }}
+      {{ end }}
 
-        {{ if $item.cta_url }}
-        {{ $pack := or .icon_pack "fa" }}
-        <p>
-          <a href="{{ $item.cta_url }}" class="btn btn-light btn-lg">
-            {{- with $item.cta_icon -}}<i class="{{ $pack }} {{ $pack }}-{{ . }}" style="padding-right: 10px;"></i>{{- end -}}
-            {{- $item.cta_label | emojify | safeHTML -}}
-          </a>
-        </p>
+      {{ $master := resources.Get (printf "img/%s" .) }}
+      {{ if $master }}
+        {{/* Only widths the master can actually supply. */}}
+        {{ $usable := slice }}
+        {{ range $w := $widths }}
+          {{ if le $w $master.Width }}{{ $usable = $usable | append $w }}{{ end }}
         {{ end }}
-      </div>
+        {{ if not $usable }}{{ $usable = slice $master.Width }}{{ end }}
+
+        {{ $avif := slice }}{{ $webp := slice }}{{ $jpeg := slice }}
+        {{ range $w := $usable }}
+          {{ $a := $master.Resize (printf "%dx avif q55" $w) }}
+          {{ $b := $master.Resize (printf "%dx webp q72" $w) }}
+          {{ $c := $master.Resize (printf "%dx jpg q78" $w) }}
+          {{ $avif = $avif | append (printf "%s %dw" $a.RelPermalink $w) }}
+          {{ $webp = $webp | append (printf "%s %dw" $b.RelPermalink $w) }}
+          {{ $jpeg = $jpeg | append (printf "%s %dw" $c.RelPermalink $w) }}
+        {{ end }}
+        {{ $fallback := $master.Resize (printf "%dx jpg q78" (index $usable 0)) }}
+
+        <picture class="hero-bg">
+          <source type="image/avif" srcset="{{ delimit $avif ", " }}" sizes="100vw">
+          <source type="image/webp" srcset="{{ delimit $webp ", " }}" sizes="100vw">
+          <img src="{{ $fallback.RelPermalink }}"
+               srcset="{{ delimit $jpeg ", " }}"
+               sizes="100vw"
+               width="{{ $master.Width }}" height="{{ $master.Height }}"
+               alt=""
+               loading="{{ $loading }}"
+               fetchpriority="{{ $priority }}"
+               decoding="{{ $decoding }}">
+        </picture>
+      {{ else }}
+        {{/* Not found under assets/, so it cannot be resized or re-encoded. Serve the
+             static copy as-is rather than rendering an empty slide: a missing asset
+             must never leave a blank carousel. Pages in this state still get the
+             lazy-loading benefit, just not the format and size conversion. */}}
+        {{ warnf "slider: %q is not in assets/, serving it unprocessed from static/" . }}
+        <picture class="hero-bg">
+          <img src="{{ printf "img/%s" . | absURL }}"
+               alt=""
+               loading="{{ $loading }}"
+               fetchpriority="{{ $priority }}"
+               decoding="{{ $decoding }}">
+        </picture>
+      {{ end }}
+    {{ end }}
+
+    {{ with $item.overlay_filter }}
+    <div class="hero-tint" style="background-color: rgba(0, 0, 0, {{ . }});"></div>
+    {{ end }}
   </div>
   {{ end }}
 </div>
 
+<!-- Static hero: rendered once, does not move with the slides. One h1 for the page. -->
+<div class="hero-static">
+  <div class="container" style="text-align: {{ $page.Params.hero_align | default "center" }};">
+    {{/* Title and lead travel together above the midline; the button is pinned to
+         the midline separately, so extra lines here never push it off centre. */}}
+    <div class="hero-text">
+      {{ with $page.Params.hero_title }}
+      {{/* A `//` in the title is wrapped so it can take the accent colour, matching
+           the tagline separators. aria-hidden keeps it out of the announced heading,
+           so a screen reader reads "Mark Riganti Projects" rather than the slashes. */}}
+      {{- $t := . | markdownify | emojify -}}
+      {{- $t = replace $t "//" "<span class=\"hero-title-sep\" aria-hidden=\"true\">//</span>" -}}
+      <h1 class="hero-title" itemprop="headline">{{ $t | safeHTML }}</h1>
+      {{ end }}
+
+      {{/* `hero_lead_items` renders as real text separated by decorative dots. The
+           words stay in the HTML so crawlers read them exactly as before; only the
+           punctuation changes. The separators are aria-hidden so screen readers do
+           not announce "middle dot" between every phrase. */}}
+      {{ with $page.Params.hero_lead_items }}
+      {{/* `lead_sep` picks the separator treatment: "dot" (CSS circles, no glyph, so
+           the crawlable text stays punctuation-free) or "slash" (literal //).
+           Dots bracket the line as well; slashes sit only between items, since a
+           leading // reads as a commented-out line to anyone who writes code. */}}
+      {{ $sep := $page.Params.lead_sep | default "dot" }}
+      <p class="hero-lead hero-lead--{{ $sep }}">
+        {{- if eq $sep "dot" }}<span class="hero-rule" aria-hidden="true"></span>{{ " " }}{{ end -}}
+        {{- range $i, $item := . -}}
+          {{- if $i }}{{ " " }}<span class="hero-sep" aria-hidden="true">
+            {{- if eq $sep "slash" }}//{{ end -}}
+            {{- /* Same SVG as the navbar `>>`, so both chevrons share one shape. */ -}}
+            {{- if eq $sep "chev" }}<svg class="chev chev--double" viewBox="0 0 64 74" focusable="false"><polyline points="6.5,2.5 21.5,37 6.5,71.5"/><polyline points="42.5,2.5 57.5,37 42.5,71.5"/></svg>{{ end -}}
+          </span>{{ " " }}{{ end -}}
+          {{- $item | markdownify | emojify -}}
+        {{- end -}}
+        {{- if eq $sep "dot" }}{{ " " }}<span class="hero-rule" aria-hidden="true"></span>{{ end -}}
+      </p>
+      {{ else }}
+        {{ with $page.Params.hero_lead }}
+        <p class="hero-lead">{{ . | markdownify | emojify }}</p>
+        {{ end }}
+      {{ end }}
+    </div>
+
+    {{ if $page.Params.cta_url }}
+    <p class="hero-cta">
+      {{/* `page-scroll` opts this link into the theme's own 1500ms easeInOutExpo
+           scroll (academia.js binds `nav a, .page-scroll`). Without it the browser
+           jumps to the anchor instantly. */}}
+      {{/* A short visible label reads better when the heading above already names
+           the destination, but "Explore, link" on its own tells a screen-reader user
+           nothing. `cta_aria_label` carries the full phrase for them. */}}
+      <a href="{{ $page.Params.cta_url }}" class="btn btn-lg page-scroll"
+         {{ with $page.Params.cta_aria_label }}aria-label="{{ . }}"{{ end }}>
+        {{- $page.Params.cta_label | default "Projects" | emojify | safeHTML -}}
+        {{- with $page.Params.cta_icon }}<i class="fas fa-{{ . }}" aria-hidden="true"></i>{{ end -}}
+      </a>
+    </p>
+    {{ end }}
+  </div>
+</div>
+
 <!-- Left and right controls -->
-<a class="carousel-control-prev" href="#{{$hash_id}}" data-slide="prev">
+<a class="carousel-control-prev" href="#{{ $hash_id }}" data-slide="prev">
   <span class="carousel-control-prev-icon"></span>
   <span class="sr-only">Previous</span>
 </a>
-<a class="carousel-control-next" href="#{{$hash_id}}" data-slide="next">
+<a class="carousel-control-next" href="#{{ $hash_id }}" data-slide="next">
   <span class="carousel-control-next-icon"></span>
   <span class="sr-only">Next</span>
 </a>

@@ -8,11 +8,63 @@
       <a class="navbar-img" href="{{ "/" | relLangURL }}">
         <img src="{{ printf "/img/%s" site.Params.logo | relURL }}">
 		  <a class="navbar-brand" href="{{ "/" | relLangURL }}">
-			{{if $.Site.Params.maintitle }}
-				{{$.Site.Params.maintitle}}
-			{{else}}
-				{{site.Title}}
-			{{end}}
+			{{- if $.Site.Params.maintitle -}}
+				{{/* Wrap each colon so it can be coloured independently of the words.
+				     The value comes from site config, not user content, so safeHTML
+				     is not exposing anything a visitor can influence. */}}
+				{{/* Handles either separator, so changing the look is a config edit:
+				     set `maintitle` with "//" or "·" and the matching class follows. */}}
+				{{- $brand := $.Site.Params.maintitle -}}
+				{{/* `>>` is drawn as SVG, not text: a font glyph cannot be made taller and
+				     narrower without its strokes distorting too. The viewBox is in units
+				     of 0.01em on both axes, so the stroke keeps a true, even thickness. */}}
+				{{/* Each single chevron fades 10% more than the one before, left to right
+				     (1, 0.9, 0.8 ... floored at 0.1), so the wordmark reads as moving
+				     forward. Built by splitting on `>>` because each chevron needs its
+				     own position to get its own opacity. */}}
+				{{- $parts := split $brand ">>" -}}
+				{{- $out := "" -}}
+				{{- range $i, $p := $parts -}}
+					{{- if $i -}}
+						{{- $n := mul 2 (sub $i 1) -}}
+						{{- $a := math.Max 0.1 (sub 1.0 (mul 0.1 (float $n))) -}}
+						{{- $b := math.Max 0.1 (sub 1.0 (mul 0.1 (float (add $n 1)))) -}}
+						{{- $out = printf "%s<span class=\"brand-sep brand-sep--chev\" aria-hidden=\"true\"><svg class=\"chev chev--double\" viewBox=\"0 0 64 74\" focusable=\"false\"><polyline points=\"6.5,2.5 21.5,37 6.5,71.5\" opacity=\"%.1f\"/><polyline points=\"42.5,2.5 57.5,37 42.5,71.5\" opacity=\"%.1f\"/></svg></span>" $out $a $b -}}
+					{{- end -}}
+					{{- $p = replace $p "//" "<span class=\"brand-sep brand-sep--slash\">//</span>" -}}
+					{{- $p = replace $p "·" "<span class=\"brand-sep brand-sep--dot\">·</span>" -}}
+					{{- $out = print $out $p -}}
+				{{- end -}}
+				{{- $out | safeHTML -}}
+				{{/* Optional fading trail after the wordmark: `brand_trail = 7` in config
+				     renders that many slashes, each 10% more transparent than the last.
+				     Decorative only, so aria-hidden keeps it out of the link's name. */}}
+				{{- with site.Params.brand_trail -}}
+					{{- $n := int . -}}
+					{{- if gt $n 0 -}}
+						{{/* Ramp endpoints are stated rather than baked into the step, so
+						     changing `brand_trail` still spans the same fade. */}}
+						{{- $from := 0.7 -}}
+						{{- $to := 0.1 -}}
+						{{- $step := 0.0 -}}
+						{{- if gt $n 1 -}}{{- $step = div (sub $from $to) (float (sub $n 1)) -}}{{- end -}}
+						<span class="brand-trail" aria-hidden="true">
+						{{- $char := site.Params.brand_trail_char | default "/" -}}
+						{{- range $i := seq $n -}}
+							<span style="opacity:{{ printf "%.2f" (sub $from (mul $step (float (sub $i 1)))) }}">
+							{{- if eq $char ">" -}}
+								<svg class="chev chev--single" viewBox="0 0 28 74" focusable="false"><polyline points="6.5,2.5 21.5,37 6.5,71.5"/></svg>
+							{{- else -}}
+								{{ $char }}
+							{{- end -}}
+							</span>
+						{{- end -}}
+						</span>
+					{{- end -}}
+				{{- end -}}
+			{{- else -}}
+				{{- site.Title -}}
+			{{- end -}}
 		  </a>
       </a>
       {{ if or site.Menus.main .IsTranslated }}
