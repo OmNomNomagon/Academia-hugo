@@ -24,6 +24,16 @@
      number of variants Hugo has to encode. The homepage hero opts into the third. */}}
 {{ $widths := $page.Params.image_widths | default (slice 1280 1920) }}
 
+{{/* Fit. "cover" fills the slide edge to edge and crops the photo (the homepage
+     hero, where text sits on top). "contain" shows the whole photo at the slide's
+     height, with a blurred, darkened copy of it filling the space either side so
+     the slide still spans the page (project galleries). Set `fit` in slider.md
+     to override. */}}
+{{ $fit := $page.Params.fit | default (cond $.IsHome "cover" "contain") }}
+{{/* In contain mode a landscape photo is only as wide as height x aspect: about
+     60vh x 1.33-1.78 on desktop, never more than the viewport. */}}
+{{ $sizes := cond (eq $fit "contain") "(orientation: portrait) 100vw, min(100vw, 110vh)" "100vw" }}
+
 <!-- Indicators -->
 <ol class="carousel-indicators">
   {{ range $index, $item := $items }}
@@ -38,7 +48,7 @@
        "<page title> – photo N" so image search knows what they show. The
        homepage hero sets an alt per slide in content/home/slider.md. */}}
   {{ $alt := $item.alt | default (cond $.IsHome "" (printf "%s – photo %d" $.Title (add $index 1))) }}
-  <div class="wg-hero dark carousel-item{{ if eq $index 0 }} active{{ end }}"
+  <div class="wg-hero dark carousel-item{{ if eq $index 0 }} active{{ end }}{{ if eq $fit "contain" }} fit-contain{{ end }}"
        style="{{ with $page.Params.height }}{{ printf "height: %s;" . | safeCSS }}{{ end }}{{ with $item.overlay_color }}background-color: {{ . }};{{ end }}">
 
     {{ with $item.overlay_img }}
@@ -96,7 +106,8 @@
         {{ range $w := ($page.Params.phone_widths | default (slice 720)) }}
           {{ if le $w $maxW }}{{ $pw = $pw | append $w }}{{ else if not $capped }}{{ $pw = $pw | append $maxW }}{{ $capped = true }}{{ end }}
         {{ end }}
-        {{ range $w := $pw }}
+        {{/* Phone crops only make sense when cropping; contain shows the whole photo. */}}
+        {{ range $w := (cond (eq $fit "contain") (slice) $pw) }}
           {{ $h := int (math.Round (div (mul (float $w) $rh) $rw)) }}
           {{ if and (le $w $master.Width) (le $h $master.Height) }}
             {{ $spec := printf "%dx%d %s" $w $h $anchor }}
@@ -106,6 +117,12 @@
         {{ end }}
         {{ $phone := "(max-width: 600px) and (orientation: portrait)" }}
 
+        {{- if eq $fit "contain" }}
+        {{/* The blurred side fill: a tiny copy of the same photo, stretched to cover
+             the slide and blurred in CSS. At 96px wide it costs ~1-2 KB, and the
+             blur hides that it is low resolution. Decorative, so empty alt. */}}
+        <img class="hero-blur" src="{{ ($master.Resize "96x webp q50").RelPermalink }}" alt="" aria-hidden="true" loading="{{ $loading }}" decoding="async">
+        {{- end }}
         <picture class="hero-bg">
           {{- with $pAvif }}
           <source media="{{ $phone }}" type="image/avif" srcset="{{ delimit . ", " }}" sizes="100vw">
@@ -113,11 +130,11 @@
           {{- with $pWebp }}
           <source media="{{ $phone }}" type="image/webp" srcset="{{ delimit . ", " }}" sizes="100vw">
           {{- end }}
-          <source type="image/avif" srcset="{{ delimit $avif ", " }}" sizes="100vw">
-          <source type="image/webp" srcset="{{ delimit $webp ", " }}" sizes="100vw">
+          <source type="image/avif" srcset="{{ delimit $avif ", " }}" sizes="{{ $sizes }}">
+          <source type="image/webp" srcset="{{ delimit $webp ", " }}" sizes="{{ $sizes }}">
           <img src="{{ $fallback.RelPermalink }}"
                srcset="{{ delimit $jpeg ", " }}"
-               sizes="100vw"
+               sizes="{{ $sizes }}"
                width="{{ $master.Width }}" height="{{ $master.Height }}"
                alt="{{ $alt }}"
                loading="{{ $loading }}"

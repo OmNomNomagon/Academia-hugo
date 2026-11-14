@@ -401,6 +401,33 @@ pre, code {
     z-index: 1;
 }
 
+/* Project galleries ("contain" fit): the whole photo, centred at the slide's
+   height, over a blurred and darkened copy of itself that fills the width.
+   The blur layer is oversized (inset -8%) so the blur's soft edges fall
+   outside the slide instead of showing as a pale frame. */
+.carousel-item.fit-contain {
+    overflow: hidden;
+    background-color: #000;
+}
+.carousel-item.fit-contain .hero-blur {
+    position: absolute;
+    top: -8%;
+    left: -8%;
+    width: 116%;
+    height: 116%;
+    max-width: none;   /* the theme caps img at 100%, which left a black band on the right */
+    object-fit: cover;
+    filter: blur(28px) brightness(0.85) saturate(1.1);
+    z-index: 0;
+    pointer-events: none;
+}
+.carousel-item.fit-contain .hero-bg {
+    z-index: 1;
+}
+.carousel-item.fit-contain .hero-bg img {
+    object-fit: contain;
+}
+
 .hero-static {
     position: absolute;
     top: 0;
@@ -826,4 +853,18 @@ pre, code {
 .wg-slider .carousel-control-prev,
 .wg-slider .carousel-control-next {
     z-index: 4;
+}
+/* Project pages: tighter gap from the slider to the title (was 70px, now 40px).
+   Only where the article follows a slider directly, so other pages keep theirs. */
+.wg-slider + .article-project {
+    padding-top: 0 !important;
+}
+
+/* Project pages: date sits right under the title. */
+.article-project .article-container > h1 {
+    margin-bottom: 0;
+    line-height: 1.15;
+}
+.article-project .article-metadata {
+    line-height: 1.4;
 }
