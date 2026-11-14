@@ -1,12 +1,43 @@
 {{- /* Every Markdown image ( ![alt](src) ) in the site's pages renders through
-     this hook. Most write-up photos were written with no alt text, or with the
-     placeholder "table", so image search had nothing to go on. Those now get
+     this hook.
+
+     Alt text: most write-up photos were written with no alt text, or with the
+     placeholder "table", so image search had nothing to go on. Those get
      "<page title> – build photo N"; any real alt text is kept as written, so
      describing a photo properly in the Markdown always wins.
-     Photos in write-ups sit below the page's slider, so they load lazily. */ -}}
+
+     Sizes: a photo in the page's own folder (`![](I01.jpg)` in
+     content/build/<name>/) goes through Hugo's image pipeline: AVIF and WebP at
+     480/800/1200px, a JPEG fallback, and width/height so nothing shifts while it
+     loads. The originals are phone photos of several MB; the article column is
+     about 1000px wide. Anything not found in the folder (remote images, like the
+     MK3x guide's GitHub-hosted photos) or animated GIFs pass through unchanged.
+     Write-up photos sit below the page's slider, so they all load lazily. */ -}}
 {{- $alt := .PlainText -}}
 {{- if or (not $alt) (eq (lower (trim $alt " ")) "table") -}}
   {{- $alt = printf "%s – build photo %d" .Page.Title (add .Ordinal 1) -}}
 {{- end -}}
+{{- $img := "" -}}
+{{- if not (strings.HasPrefix .Destination "http") -}}
+  {{- $img = .Page.Resources.Get .Destination -}}
+{{- end -}}
+{{- if and $img (eq $img.ResourceType "image") (ne $img.MediaType.SubType "gif") (ne $img.MediaType.SubType "svg") -}}
+  {{- $widths := slice -}}
+  {{- range slice 480 800 1200 }}{{ if le . $img.Width }}{{ $widths = $widths | append . }}{{ end }}{{ end -}}
+  {{- if not $widths }}{{ $widths = slice $img.Width }}{{ end -}}
+  {{- $avif := slice }}{{ $webp := slice -}}
+  {{- range $w := $widths -}}
+    {{- $avif = $avif | append (printf "%s %dw" ($img.Resize (printf "%dx avif q55" $w)).RelPermalink $w) -}}
+    {{- $webp = $webp | append (printf "%s %dw" ($img.Resize (printf "%dx webp q72" $w)).RelPermalink $w) -}}
+  {{- end -}}
+  {{- $fb := $img.Resize (printf "%dx jpg q78" (index $widths (sub (len $widths) 1))) -}}
+  {{- $sizes := "(max-width: 1100px) 100vw, 1000px" -}}
+<picture>
+  <source type="image/avif" srcset="{{ delimit $avif ", " }}" sizes="{{ $sizes }}">
+  <source type="image/webp" srcset="{{ delimit $webp ", " }}" sizes="{{ $sizes }}">
+  <img src="{{ $fb.RelPermalink }}" width="{{ $fb.Width }}" height="{{ $fb.Height }}" alt="{{ $alt }}"{{ with .Title }} title="{{ . }}"{{ end }} loading="lazy" decoding="async">
+</picture>
+{{- else -}}
 <img src="{{ .Destination | safeURL }}" alt="{{ $alt }}"{{ with .Title }} title="{{ . }}"{{ end }} loading="lazy" decoding="async">
+{{- end -}}
 {{- /**/ -}}

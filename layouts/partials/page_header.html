@@ -18,7 +18,9 @@
 
 
 {{/* Featured image */}}
-{{ if and $featured (not .Params.image.preview_only) }}
+{{/* A project's featured.jpg is its grid-card and share photo; its page already
+     opens with the slider, so never repeat it as a banner here. */}}
+{{ if and $featured (not .Params.image.preview_only) (not .Params.card) }}
 {{ $image := $featured.Fill (printf "1500x1000 q90 %s" $anchor) }}
 <div class="container split-header">
   <div class="row justify-content-center">

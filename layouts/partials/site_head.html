@@ -197,18 +197,11 @@
   <link rel="canonical" href="{{ .Permalink }}">
 
   {{ $featured_image := (.Resources.ByType "image").GetMatch "*featured*" }}
-  {{/* Project write-ups (/build/..., the MK3x docs) have no featured image of
-       their own: their photo is on the homepage-grid card that links to them
-       (content/project/<name>/featured.jpg). Find that card by its
-       external_link; docs pages without their own card use their section's.
-       Without this every project shared with the sitewide image. */}}
-  {{ if not $featured_image }}
-    {{ $cards := where site.RegularPages "Type" "project" }}
-    {{ $card := index (where $cards "Params.external_link" .RelPermalink) 0 }}
-    {{ if and (not $card) .CurrentSection }}
-      {{ $card = index (where $cards "Params.external_link" .CurrentSection.RelPermalink) 0 }}
-    {{ end }}
-    {{ with $card }}{{ $featured_image = (.Resources.ByType "image").GetMatch "*featured*" }}{{ end }}
+  {{/* Each project keeps its card photo (featured.jpg) in its own folder, so the
+       page's own featured image is the share image. Guide pages without one
+       (most of the MK3x steps) use their section's, i.e. the MK3x photo. */}}
+  {{ if and (not $featured_image) (not .IsHome) .CurrentSection (ne .CurrentSection .) }}
+    {{ $featured_image = (.CurrentSection.Resources.ByType "image").GetMatch "*featured*" }}
   {{ end }}
   {{ $og_image := "" }}
   {{ $twitter_card := "summary_large_image" }}

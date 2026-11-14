@@ -84,7 +84,18 @@
       {{ end }}
 
       <div class="{{ if or $st.Params.content.filter_button (eq $st.Params.design.view 3) }}isotope projects-container{{end}} {{if eq $st.Params.design.view 3}}js-layout-masonry{{else}}row js-layout-row{{end}} {{ if eq $st.Params.design.view 5 }}project-showcase mt-5{{end}}">
-        {{ range $idx, $item := where site.RegularPages "Type" $items_type }}
+        {{/* Grid entries are the projects themselves: any page with `card: true`
+             (write-ups in content/build/<name>/, plus the MK3x guide pages).
+             Order is `card_weight`, kept separate from `weight` because the docs
+             pages already use weight for their sidebar order. Falls back to the
+             theme's old behaviour (pages of `page_type`) if no page opts in. */}}
+        {{ $cards := where site.Pages "Params.card" true }}
+        {{ if $cards }}
+          {{ $cards = sort $cards "Params.card_weight" }}
+        {{ else }}
+          {{ $cards = where site.RegularPages "Type" $items_type }}
+        {{ end }}
+        {{ range $idx, $item := $cards }}
         {{ $link := $item.RelPermalink }}
         {{ $target := "" }}
         {{ if $item.Params.external_link }}

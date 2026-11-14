@@ -1,4 +1,9 @@
 {{ $item := .item }}
+{{/* Cards can use shorter wording than the page itself: card_title and
+     card_summary in the page's front matter, falling back to its title and
+     summary. */}}
+{{ $cardTitle := $item.Params.card_title | default $item.Title }}
+{{ $cardSummary := $item.Params.card_summary | default $item.Params.summary }}
 {{ $widget := .widget }}
 
 {{ $link := .link }}
@@ -42,16 +47,16 @@
         <source type="image/webp" srcset="{{ delimit $webp ", " }}" sizes="{{ $sizes }}">
         <img src="{{ $fallback.RelPermalink }}" srcset="{{ delimit $jpeg ", " }}" sizes="{{ $sizes }}"
              width="{{ $fallback.Width }}" height="{{ $fallback.Height }}"
-             alt="{{ $item.Title }}" class="img-responsive" loading="lazy" decoding="async">
+             alt="{{ $cardTitle }}" class="img-responsive" loading="lazy" decoding="async">
       </picture>
     </a>
     {{ end }}
     <div class="card-body">
       {{/* h3: section headings are h2, so card titles come next in the outline.
            (Were h4, which skipped a level.) Styled identically via .card h3. */}}
-      <h3><a href="{{ $link }}" {{ $target | safeHTMLAttr }}>{{ $item.Title | markdownify | emojify }}</a></h3>
+      <h3><a href="{{ $link }}" {{ $target | safeHTMLAttr }}>{{ $cardTitle | markdownify | emojify }}</a></h3>
       <div class="card-desription">
-        {{ with $item.Params.summary }}<p>{{ . | markdownify | emojify }}</p>{{ end }}
+        {{ with $cardSummary }}<p>{{ . | markdownify | emojify }}</p>{{ end }}
       </div>
     </div>
   </div>

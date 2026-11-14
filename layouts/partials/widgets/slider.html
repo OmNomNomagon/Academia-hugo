@@ -2,6 +2,18 @@
 {{ $page := .page }}
 {{ $hash_id := .hash_id }}
 {{ $items := $page.Params.item }}
+{{/* No [[item]] list: build the slides from the project folder's photos named
+     G1.jpg, G2.jpg... (the existing projects' convention) or slide-1.jpg,
+     slide-2.jpg..., in name order. Adding a project then needs no slide list. */}}
+{{ if not $items }}
+  {{ $auto := slice }}
+  {{ range sort (($.Resources.Match "G[0-9]*") | union ($.Resources.Match "slide*")) "Name" }}
+    {{ if eq .ResourceType "image" }}
+      {{ $auto = $auto | append (dict "overlay_img" .Name "overlay_color" "#000" "overlay_filter" 0.0) }}
+    {{ end }}
+  {{ end }}
+  {{ $items = $auto }}
+{{ end }}
 
 {{/* Candidate widths, overridable per slider with `image_widths` in front matter.
      Narrower than you might expect is fine: these photos sit under a tint behind text,
@@ -41,7 +53,10 @@
         {{ $loading = "eager" }}{{ $priority = "high" }}{{ $decoding = "sync" }}
       {{ end }}
 
-      {{ $master := resources.Get (printf "img/%s" .) }}
+      {{/* A project's slides live in its own folder (content/build/<name>/G1.jpg),
+           so look in the page's bundle first; the homepage hero's live under
+           assets/img/ and fall through to that. */}}
+      {{ $master := or ($.Resources.Get .) (resources.Get (printf "img/%s" .)) }}
       {{ if $master }}
         {{/* Only widths the master can actually supply. */}}
         {{ $usable := slice }}
@@ -61,7 +76,43 @@
         {{ end }}
         {{ $fallback := $master.Resize (printf "%dx jpg q78" (index $usable 0)) }}
 
+        {{/* Phone crop. On a portrait phone the slide is far taller than it is wide,
+             so `object-fit: cover` shows only a narrow middle slice of the wide
+             photo, magnified: the phone downloaded a 1280px landscape image to
+             display about a third of it. Instead, phones get a crop already in
+             the slide's shape (`phone_crop`, width:height; the homepage hero is
+             88vh tall so 3:5, project sliders are 65vh so 4:5 by default).
+             It always sits under the dark tint, which hides fine detail, so it
+             can be compressed harder. Sizes the master can't supply are skipped. */}}
+        {{ $ratio := split ($page.Params.phone_crop | default "4:5") ":" }}
+        {{ $rw := float (index $ratio 0) }}{{ $rh := float (index $ratio 1) }}
+        {{ $anchor := $item.anchor | default "Center" }}
+        {{ $pAvif := slice }}{{ $pWebp := slice }}
+        {{/* Widths the master can't fill at this ratio are replaced by the largest
+             crop it can (e.g. a 1050px-tall photo can't make 720x1200 at 3:5, so it
+             gets 630x1050), rather than leaving phones with only the smallest. */}}
+        {{ $maxW := int (math.Floor (math.Min (float $master.Width) (div (mul (float $master.Height) $rw) $rh))) }}
+        {{ $pw := slice }}{{ $capped := false }}
+        {{ range $w := ($page.Params.phone_widths | default (slice 720)) }}
+          {{ if le $w $maxW }}{{ $pw = $pw | append $w }}{{ else if not $capped }}{{ $pw = $pw | append $maxW }}{{ $capped = true }}{{ end }}
+        {{ end }}
+        {{ range $w := $pw }}
+          {{ $h := int (math.Round (div (mul (float $w) $rh) $rw)) }}
+          {{ if and (le $w $master.Width) (le $h $master.Height) }}
+            {{ $spec := printf "%dx%d %s" $w $h $anchor }}
+            {{ $pAvif = $pAvif | append (printf "%s %dw" ($master.Fill (printf "%s avif q45" $spec)).RelPermalink $w) }}
+            {{ $pWebp = $pWebp | append (printf "%s %dw" ($master.Fill (printf "%s webp q60" $spec)).RelPermalink $w) }}
+          {{ end }}
+        {{ end }}
+        {{ $phone := "(max-width: 600px) and (orientation: portrait)" }}
+
         <picture class="hero-bg">
+          {{- with $pAvif }}
+          <source media="{{ $phone }}" type="image/avif" srcset="{{ delimit . ", " }}" sizes="100vw">
+          {{- end }}
+          {{- with $pWebp }}
+          <source media="{{ $phone }}" type="image/webp" srcset="{{ delimit . ", " }}" sizes="100vw">
+          {{- end }}
           <source type="image/avif" srcset="{{ delimit $avif ", " }}" sizes="100vw">
           <source type="image/webp" srcset="{{ delimit $webp ", " }}" sizes="100vw">
           <img src="{{ $fallback.RelPermalink }}"

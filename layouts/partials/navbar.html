@@ -31,6 +31,10 @@
         {{- else }}
         <img src="{{ printf "/img/%s" site.Params.logo | relURL }}" width="60" height="60" alt="Mark Riganti, home">
         {{- end }}
+      </a>
+      {{/* Logo and title are sibling links. They used to be nested (the logo's
+           </a> came after the title's), which is invalid HTML; browsers already
+           closed the logo link early on their own, so the layout is unchanged. */}}
 		  <a class="navbar-brand" href="{{ "/" | relLangURL }}">
 			{{- if $.Site.Params.maintitle -}}
 				{{/* Wrap each colon so it can be coloured independently of the words.
@@ -90,7 +94,6 @@
 				{{- site.Title -}}
 			{{- end -}}
 		  </a>
-      </a>
       {{ if or site.Menus.main .IsTranslated }}
       <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="{{ i18n "toggle_navigation" }}"><span><i class="fas fa-bars"></i></span>
       </button>
